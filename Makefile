@@ -3,7 +3,7 @@
 # Compilation flags
 C_DIR       = dist
 C_FLAGS     = GOARCH=amd64
-BINARY_NAME = sigma
+BINARY_NAME = affinity
 
 # Go
 GOCMD  = go
@@ -14,15 +14,14 @@ clean:
 	rm -rf $(C_DIR)
 
 test:
-	$(GOTEST) ./api
-	$(GOTEST) ./database/postgres
+	$(GOTEST) .
 
 # Build binary for current OS
-sigma-local:
+affinity-local:
 	$(C_FLAGS) go build -o $(C_DIR)/local/$(BINARY_NAME)
 
 # Build cross-platform binaries
-sigma:
+affinity:
 	$(call build_os,linux)
 	$(call build_os,darwin)
 	$(call build_os,windows,.exe)
