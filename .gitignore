@@ -1,4 +1,3 @@
+database/target
 .idea
-
-node_modules
-dist
+*.idea
