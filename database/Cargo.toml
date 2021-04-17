@@ -1,0 +1,29 @@
+[package]
+name = "database"
+version = "0.1.0"
+authors = ["Esteban Garcia <estebangarcia2121@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+protobuf = "2"
+bson = "1.2.2"
+serde = "1.0.125"
+serde_json = "1.0"
+encoding = "0.2.33"
+encoding_rs_io = "0.1"
+uuid = "0.8"
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+futures = "0.3.4"
+
+[dependencies.rocket_contrib]
+version = "0.4.7"
+default-features = false
+features = ["json"]
+
+[build-dependencies]
+protoc-rust = "2.0"
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
