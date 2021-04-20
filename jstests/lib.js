@@ -3,7 +3,7 @@
  * @type {{ok: t.ok}}
  */
 const t = {
-    ok: function() {
+    ok: () => {
         console.log("ok");
     }
 };
