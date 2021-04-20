@@ -1,25 +1,26 @@
 // Runs all tests in the t directory.
 const fs = require("fs");
 const path = require("path");
+const lib = require("./lib");
 
-/**
- * Object for declaring test as successful or not successful.
- * @type {{ok: t.ok}}
- */
-const t = {
-    ok: function() {
-        console.log("ok");
-    }
-};
-
-(function() {
+(() => {
     const rootPath = path.resolve(__dirname, "t");
-    fs.readdir(rootPath, function (err, files) {
-        files.map(function (file) {
-            const test = require(path.resolve(rootPath, file));
+    fs.readdir(rootPath, (err, files) => {
+        files.map((file) => {
+            const {
+                name,
+                before,
+                after,
+                test
+            } = require(path.resolve(rootPath, file));
 
-            console.log("[" + test.name + "]");
-            test.test(t);
+            console.log("[" + name + "]");
+
+            if (before) before();
+
+            test(lib.t, lib.u);
+
+            if (after) after();
         });
     });
 })();

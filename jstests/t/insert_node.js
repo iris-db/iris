@@ -3,7 +3,13 @@
  */
 module.exports = {
     name: "Insert Node",
-    test: function (t) {
+    before: () => {
+        console.log("Hello world!");
+    },
+    test: (t) => {
         t.ok();
-    }
+    },
+    after: () => {
+        console.log("Bye world!");
+    },
 }
