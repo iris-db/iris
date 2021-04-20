@@ -1,8 +1,12 @@
-use std::convert::Infallible;
+use std::convert::{Infallible, TryFrom};
 use std::net::SocketAddr;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
+use rocket_contrib::json::Json;
+use serde_json::json;
+
+use crate::lib::bson::JsonObject;
 
 async fn aql_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let full_body = hyper::body::to_bytes(req.into_body()).await.unwrap();
@@ -26,4 +30,13 @@ pub async fn start_http_server() {
     if let Err(e) = server.await {
         eprintln!("HTTP SERVER ERROR: {}", e);
     }
+}
+
+#[post("/<plane>")]
+pub fn mutate_plane(plane: String) -> Json<JsonObject> {
+    Json(json!({ "hello": plane }).as_object().unwrap().clone())
+}
+
+pub fn start_rest_server() {
+    rocket::ignite().mount("/", routes![mutate_plane]).launch();
 }
