@@ -1,13 +1,14 @@
 extern crate test;
 
-use std::fs;
-use std::io::Error;
+use std::fmt::{Display, Formatter};
+use std::fs::OpenOptions;
+use std::io::{Error, Write};
 use std::time::Instant;
+use std::{fmt, fs};
 
 use serde_json::{json, Value};
 
-use crate::graph::edge::Edge;
-use crate::graph::node::{Node, NodeId};
+use crate::graph::node::{CreateNodeData, Node, NodeId};
 use crate::lib::bson::encode;
 use crate::lib::filesystem::DATA_PATH;
 use crate::lib::uid::IntCursor;
@@ -29,8 +30,8 @@ pub struct NodePlane {
     page_pos: u32,
 }
 
-/// Result of deleting a node.
-pub struct DeleteResult {
+/// Result of a crud operation.
+pub struct CrudOperationResult {
     count: u32,
     time: u128,
 }
@@ -42,6 +43,19 @@ pub enum SerializationError {
     Filesystem(Error),
     /// Caused by a node exceeded the maximum node size.
     NodeSizeExceeded(NodeId),
+}
+
+impl Display for SerializationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        return match self {
+            SerializationError::Filesystem(e) => {
+                write!(f, "[Filesystem] SerializationError: {}", e.to_string())
+            }
+            SerializationError::NodeSizeExceeded(id) => {
+                write!(f, "[NodeSizeExceeded] SerializationError: {}", id)
+            }
+        };
+    }
 }
 
 /// Methods for marshaling errors into JSON error objects.
@@ -79,25 +93,53 @@ impl NodePlane {
         })
     }
 
-    // Inserts a node into a node plane, returning its unique id.
-    pub fn insert_node(&mut self, bson: Option<&str>, edges: Option<Vec<Edge>>) -> NodeId {
-        let id = self.cursor.next();
+    /// Inserts a set of nodes into the node plane.
+    ///
+    /// Returns the operation result and a vec of equal length to the nodes vec containing the
+    /// node ids.
+    pub fn insert_nodes(
+        &mut self,
+        data: Option<Vec<CreateNodeData>>,
+    ) -> Result<(CrudOperationResult, Vec<NodeId>), SerializationError> {
+        let now = Instant::now();
 
-        let n = Node::new(
-            id,
-            bson.unwrap_or("{}").to_string(),
-            edges.unwrap_or(Vec::new()),
-        );
+        let data = data.unwrap_or(Vec::new());
 
-        let res = self.serialize_node();
+        let mut ids: Vec<NodeId> = Vec::new();
+        let mut count = 0;
 
-        self.nodes.push(Box::from(n));
-        self.nodes.sort();
+        for CreateNodeData(bson, edges) in data {
+            let id = self.cursor.next();
 
-        id
+            let n = Node::new(
+                id,
+                bson.unwrap_or("{}".to_string()),
+                edges.unwrap_or(Vec::new()),
+            );
+
+            match self.serialize_node(&n) {
+                Some(e) => return Err(e),
+                None => {}
+            };
+
+            ids.push(id);
+
+            self.nodes.push(Box::from(n));
+            self.nodes.sort();
+
+            count += 1;
+        }
+
+        Ok((
+            CrudOperationResult {
+                count,
+                time: now.elapsed().as_millis(),
+            },
+            ids,
+        ))
     }
 
-    pub fn delete_node_by_id(&mut self, id: NodeId) -> DeleteResult {
+    pub fn delete_node_by_id(&mut self, id: NodeId) -> CrudOperationResult {
         let now = Instant::now();
         let mut count = 0;
 
@@ -105,7 +147,7 @@ impl NodePlane {
         let pos = match pos {
             Ok(pos) => pos,
             Err(_) => {
-                return DeleteResult {
+                return CrudOperationResult {
                     count,
                     time: now.elapsed().as_millis(),
                 }
@@ -115,7 +157,7 @@ impl NodePlane {
         self.nodes.remove(pos);
         count += 1;
 
-        DeleteResult {
+        CrudOperationResult {
             count,
             time: now.elapsed().as_millis(),
         }
@@ -126,7 +168,7 @@ impl NodePlane {
         &mut self,
         predicate: fn(&Node) -> bool,
         limit: Option<u32>,
-    ) -> DeleteResult {
+    ) -> CrudOperationResult {
         let mut count = 0;
         let nodes = &mut self.nodes;
 
@@ -147,7 +189,7 @@ impl NodePlane {
             }
         }
 
-        DeleteResult {
+        CrudOperationResult {
             count,
             time: now.elapsed().as_millis(),
         }
@@ -159,34 +201,44 @@ impl NodePlane {
     /// Serializes a node onto the filesystem.
     ///
     /// Returns the serialization time if successful.
-    fn serialize_node(&mut self, node: &Node) -> Result<u128, SerializationError> {
-        let time = Instant::now();
+    fn serialize_node(&mut self, node: &Node) -> Option<SerializationError> {
+        let mut bytes = encode(node.bson());
 
-        let bytes = encode(node.bson());
+        let path = self.current_data_path();
 
-        let mut path = self.current_data_path();
+        let mut open_opts = OpenOptions::new();
+        let file_opts = open_opts.write(true).create(true);
+
+        let file = file_opts.open(path.clone());
+        let mut file = match file {
+            Ok(v) => v,
+            Err(e) => return Some(SerializationError::Filesystem(e)),
+        };
+
         let metadata = fs::metadata(path.clone());
         let metadata = match metadata {
             Ok(v) => v,
-            Err(e) => return Err(SerializationError::Filesystem(e)),
+            Err(e) => return Some(SerializationError::Filesystem(e)),
         };
 
         if bytes.len() > MAX_NODE_SIZE {
-            return Err(SerializationError::NodeSizeExceeded(*node.id()));
+            return Some(SerializationError::NodeSizeExceeded(*node.id()));
         }
 
         if metadata.len() > MAX_PAGE_SIZE {
             self.page_pos += 1;
-            path = self.current_data_path();
+            file = match file_opts.open(self.current_data_path()) {
+                Ok(v) => v,
+                Err(e) => return Some(SerializationError::Filesystem(e)),
+            }
         }
 
-        let res = fs::write(path, bytes);
-        match res {
-            Err(e) => return Err(SerializationError::Filesystem(e)),
+        match file.write(&mut bytes) {
+            Err(e) => return Some(SerializationError::Filesystem(e)),
             _ => {}
         }
 
-        Ok(time.elapsed().as_millis())
+        None
     }
 
     /// File location of the active page.
@@ -200,30 +252,58 @@ mod tests {
     use test::Bencher;
 
     use super::*;
+    use std::path::Path;
 
     #[test]
-    fn it_inserts_into_a_node_plane() {
+    fn test_insert_node() {
         let mut p = NodePlane::new("TEST");
-        let id = p.insert_node(None, None);
 
-        assert_eq!(0, id);
+        let mut data: Vec<CreateNodeData> = Vec::new();
+        data.push(CreateNodeData(
+            Some("{ \"hello\": \"world\" }".to_string()),
+            None,
+        ));
+        data.push(CreateNodeData(
+            Some("{ \"hello\": \"world\" }".to_string()),
+            None,
+        ));
+        data.push(CreateNodeData(
+            Some("{ \"hello\": \"world\" }".to_string()),
+            None,
+        ));
+
+        let res = match p.insert_nodes(Some(data)) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        assert!(Path::new(format!("{}/{}", DATA_PATH, "TEST.0").as_str()).exists());
+        assert_eq!(res.0.count, 3);
+        assert_eq!(res.1.len(), 3);
     }
 
     #[test]
-    fn it_deletes_a_node_by_id() {
+    fn test_delete_node_by_id() {
         let mut p = NodePlane::new("TEST");
 
-        let node_a = p.insert_node(None, None);
-        let node_b = p.insert_node(None, None);
-        let node_c = p.insert_node(None, None);
+        let mut data: Vec<CreateNodeData> = Vec::new();
+        // 3 empty nodes.
+        data.push(CreateNodeData(None, None));
+        data.push(CreateNodeData(None, None));
+        data.push(CreateNodeData(None, None));
 
-        let res_a = p.delete_node_by_id(node_a);
+        match p.insert_nodes(Some(data)) {
+            Err(e) => panic!("{}", e),
+            _ => {}
+        };
+
+        let res_a = p.delete_node_by_id(0);
         assert_eq!(res_a.count, 1);
 
-        let res_c = p.delete_node_by_id(node_c);
+        let res_c = p.delete_node_by_id(2);
         assert_eq!(res_c.count, 1);
 
-        let res_b = p.delete_node_by_id(node_b);
+        let res_b = p.delete_node_by_id(1);
         assert_eq!(res_b.count, 1);
 
         let res_err = p.delete_node_by_id(4);
@@ -234,6 +314,14 @@ mod tests {
     fn bench_insert_nodes(b: &mut Bencher) {
         let mut p = NodePlane::new("TEST");
 
-        b.iter(|| p.insert_node(Some("{\n  \"created_at\": \"Thu Jun 22 21:00:00 +0000 2017\",\n  \"id\": 877994604561387500,\n  \"id_str\": \"877994604561387520\",\n  \"text\": \"Creating a Grocery List Manager Using Angular, Part 1: Add &amp; Display Items https://t.co/xFox78juL1 #Angular\",\n  \"truncated\": false,\n  \"entities\": {\n    \"hashtags\": [{\n      \"text\": \"Angular\",\n      \"indices\": [103, 111]\n    }],\n    \"symbols\": [],\n    \"user_mentions\": [],\n    \"urls\": [{\n      \"url\": \"https://t.co/xFox78juL1\",\n      \"expanded_url\": \"http://buff.ly/2sr60pf\",\n      \"display_url\": \"buff.ly/2sr60pf\",\n      \"indices\": [79, 102]\n    }]\n  },\n  \"source\": \"<a href=\\\"http://bufferapp.com\\\" rel=\\\"nofollow\\\">Buffer</a>\",\n  \"user\": {\n    \"id\": 772682964,\n    \"id_str\": \"772682964\",\n    \"name\": \"SitePoint JavaScript\",\n    \"screen_name\": \"SitePointJS\",\n    \"location\": \"Melbourne, Australia\",\n    \"description\": \"Keep up with JavaScript tutorials, tips, tricks and articles at SitePoint.\",\n    \"url\": \"http://t.co/cCH13gqeUK\",\n    \"entities\": {\n      \"url\": {\n        \"urls\": [{\n          \"url\": \"http://t.co/cCH13gqeUK\",\n          \"expanded_url\": \"https://www.sitepoint.com/javascript\",\n          \"display_url\": \"sitepoint.com/javascript\",\n          \"indices\": [0, 22]\n        }]\n      },\n      \"description\": {\n        \"urls\": []\n      }\n    },\n    \"protected\": false,\n    \"followers_count\": 2145,\n    \"friends_count\": 18,\n    \"listed_count\": 328,\n    \"created_at\": \"Wed Aug 22 02:06:33 +0000 2012\",\n    \"favourites_count\": 57,\n    \"utc_offset\": 43200,\n    \"time_zone\": \"Wellington\"\n  }"), None));
+        b.iter(|| {
+            let mut data: Vec<CreateNodeData> = Vec::new();
+            data.push(CreateNodeData(Some("{}".to_string()), None));
+
+            match p.insert_nodes(Some(data)) {
+                Err(e) => panic!("{}", e),
+                _ => {}
+            }
+        });
     }
 }

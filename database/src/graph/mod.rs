@@ -1,4 +1,4 @@
 pub mod database;
-mod edge;
-mod node;
+pub mod edge;
+pub mod node;
 pub mod node_plane;

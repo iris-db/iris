@@ -9,6 +9,9 @@ pub struct Node {
     edges: Vec<Edge>,
 }
 
+/// Create a node from a BSON string and edges.
+pub struct CreateNodeData(pub Option<String>, pub Option<Vec<Edge>>);
+
 /// The primary unique identifier of a node.
 pub type NodeId = u128;
 
