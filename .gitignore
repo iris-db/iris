@@ -3,6 +3,8 @@ database/target
 database/Cargo.lock
 database/affinity
 
+__pycache__
+
 # IDE
 .idea
 *.idea
