@@ -1,3 +1,4 @@
+use crate::graph::node::CreateNodeData;
 use crate::graph::node_plane::NodePlane;
 use bson::{Bson, Document};
 use serde_json::{Map, Value};
@@ -26,11 +27,13 @@ pub fn decode_file(mut file: File, plane: &mut NodePlane) {
         acc.push(deserialized);
     }
 
-    acc.iter().for_each(|d| {
-        let v = Bson::from(d).into_relaxed_extjson();
-        // TODO Edge insertion
-        plane.insert_node(Some(v.as_str().unwrap()), None);
-    });
+    let data: Vec<CreateNodeData> = acc
+        .iter()
+        // TODO Marshal edges.
+        .map(|d| CreateNodeData(Some(Bson::from(d).into_relaxed_extjson().to_string()), None))
+        .collect();
+
+    plane.insert_nodes(Some(data));
 }
 
 #[cfg(test)]

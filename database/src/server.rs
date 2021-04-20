@@ -10,7 +10,6 @@ extern crate rocket;
 use crate::conn::http;
 use crate::lib::filesystem;
 
-mod aql;
 mod conn;
 mod graph;
 mod io;
