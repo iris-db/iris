@@ -1,0 +1,8 @@
+Affinity README
+
+The distributed graph database for modern data.
+
+COMPONENTS
+
+  afnctl - Cloud deployment manager.
+  afn - Database process.
