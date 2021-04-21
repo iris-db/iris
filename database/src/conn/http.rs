@@ -1,42 +1,43 @@
-use std::convert::{Infallible, TryFrom};
-use std::net::SocketAddr;
+use std::sync::Mutex;
 
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server};
+use rocket::State;
 use rocket_contrib::json::Json;
 use serde_json::json;
 
+use crate::graph::database::Database;
+use crate::graph::node::CreateNodeData;
 use crate::lib::bson::JsonObject;
 
-async fn aql_handler(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    let full_body = hyper::body::to_bytes(req.into_body()).await.unwrap();
+#[post("/<plane>", data = "<body>")]
+fn mutate_plane(
+    plane: String,
+    body: Json<JsonObject>,
+    db: State<Mutex<Database>>,
+) -> Json<JsonObject> {
+    let mut db = db.inner().lock().unwrap();
+    let planes = db.planes_mut();
+    let p = &mut planes[0];
 
-    let s = full_body.iter().cloned().collect::<Vec<u8>>();
+    let data = body.0;
+    for k in data.keys() {
+        if k.eq("$insert") {
+            let v = data.get(k).unwrap();
 
-    println!("{}", String::from_utf8(s).unwrap());
+            let mut d = Vec::new();
+            d.push(CreateNodeData(Some(v.to_string()), None));
 
-    Ok(Response::new("Hi".into()))
-}
-
-/// Database entrypoint. An HTTP server that accepts a POST request with a plaintext body
-/// containing the AQL query string.
-pub async fn start_http_server() {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 6123));
-
-    let make_svc = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(aql_handler)) });
-
-    let server = Server::bind(&addr).serve(make_svc);
-
-    if let Err(e) = server.await {
-        eprintln!("HTTP SERVER ERROR: {}", e);
+            p.insert_nodes(Some(d));
+        }
     }
-}
 
-#[post("/<plane>")]
-pub fn mutate_plane(plane: String) -> Json<JsonObject> {
     Json(json!({ "hello": plane }).as_object().unwrap().clone())
 }
 
 pub fn start_rest_server() {
-    rocket::ignite().mount("/", routes![mutate_plane]).launch();
+    let db = Database::new();
+
+    rocket::ignite()
+        .mount("/", routes![mutate_plane])
+        .manage(Mutex::new(db))
+        .launch();
 }
