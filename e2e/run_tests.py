@@ -62,7 +62,6 @@ def curry_mod_attr(module):
     :param module: The module to use for attribute getting and checking
     :return: A tuple containing getattr at pos 0 and hasattr at pos 1
     """
-
     def getattr_fn(attr):
         return getattr(module, attr)
 
