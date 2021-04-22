@@ -81,6 +81,13 @@ impl SerializationError {
     }
 }
 
+/// Getters.
+impl NodePlane {
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+}
+
 /// Public API. This includes CRUD operations.
 impl NodePlane {
     /// Creates a new node plane.
