@@ -6,15 +6,15 @@ use crate::lib::bson::JsonObject;
 pub struct InsertDirective {}
 
 impl Directive for InsertDirective {
-    fn key(&self) -> &str {
-        "insert"
-    }
+  fn key(&self) -> &str {
+    "insert"
+  }
 
-    fn exec(&self, ctx: &AqlContext) -> JsonObject {
-        let x = ctx.extract_directive_data(self);
+  fn exec(&self, ctx: &AqlContext) -> JsonObject {
+    let x = ctx.extract_directive_data(self);
 
-        let graph = ctx.graph();
+    let graph = ctx.graph();
 
-        serde_json::json!({}).as_object().unwrap().clone()
-    }
+    serde_json::json!({}).as_object().unwrap().clone()
+  }
 }

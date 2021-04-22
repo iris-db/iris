@@ -16,6 +16,6 @@ mod io;
 mod lib;
 
 fn main() {
-    filesystem::prepare();
-    http::start_rest_server();
+  filesystem::prepare();
+  http::start_rest_server();
 }
