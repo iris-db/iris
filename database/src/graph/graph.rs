@@ -64,19 +64,19 @@ impl SerializationError {
     let s = e.to_string();
 
     json!({
-        "error": {
-            "msg": format!("CRITICAL FILESYSTEM ERROR: {}", s),
-            "data": s
-        }
+      "error": {
+        "msg": format!("CRITICAL FILESYSTEM ERROR: {}", s),
+        "data": s
+      }
     })
   }
 
   fn marshal_node_size_exceeded_error(id: NodeId) -> Value {
     json!({
-        "error": {
-            "msg": format!("[Node Id: {}] Exceeded the maximum node size of {} bytes", id, MAX_NODE_SIZE),
-            "data": id
-        }
+      "error": {
+        "msg": format!("[Node Id: {}] Exceeded the maximum node size of {} bytes", id, MAX_NODE_SIZE),
+        "data": id
+      }
     })
   }
 }
