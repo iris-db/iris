@@ -94,8 +94,63 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_extract_directive_data() {
+        let g = Graph::new("TEST");
+
+        let json = json!(
+            {
+                "$insert": [
+                    {
+                        "$ref": "c",
+                        "data": {
+                            "age": 32,
+                            "height": "50cm",
+                            "settings": {
+                                "theme": "dark"
+                            }
+                        }
+                    }
+                ]
+            }
+        );
+
+        let ctx = AqlContext::new(&g, &json.as_object().unwrap());
+
+        struct TestDirective {}
+
+        impl Directive for TestDirective {
+            fn key(&self) -> &str {
+                "insert"
+            }
+
+            fn exec(&self, _ctx: &AqlContext) -> JsonObject {
+                todo!()
+            }
+        }
+
+        let data = ctx.extract_directive_data(&TestDirective {});
+        let data = match data {
+            DirectiveDataExtraction::Array(v) => v,
+            _ => panic!("Expected an object"),
+        };
+
+        assert!(data[0].eq(json!({
+            "$ref": "c",
+            "data": {
+                "age": 32,
+                "height": "50cm",
+                "settings": {
+                    "theme": "dark"
+                }
+            }
+        })
+        .as_object()
+        .unwrap()));
+    }
+
+    #[test]
     fn test_ref_traversal() {
-        let p = Graph::new("TEST");
+        let g = Graph::new("TEST");
 
         let json = json!(
             {
@@ -128,7 +183,7 @@ mod tests {
             }
         );
 
-        let ctx = AqlContext::new(&p, &json.as_object().unwrap());
+        let ctx = AqlContext::new(&g, &json.as_object().unwrap());
         let refs = ctx.refs();
 
         assert!(refs.get("a").unwrap().eq(json!({
