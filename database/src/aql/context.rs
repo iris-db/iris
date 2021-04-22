@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use serde_json::Value;
-
+use crate::aql::directive::{Directive, DIRECTIVE_PREFIX};
 use crate::graph::node_plane::NodePlane;
-use crate::lib::bson::JsonObject;
+use crate::lib::bson::{map_values, JsonObject};
+use serde_json::Value;
 
 /// The JSON key that denotes a reference.
 const REF_KEY: &str = "$ref";
@@ -12,16 +12,42 @@ const REF_KEY: &str = "$ref";
 pub struct AqlContext<'a> {
     /// Current node plane.
     plane: &'a NodePlane,
+    /// JSON object that contains the directive data. It is an array.
+    data: &'a JsonObject,
     /// JSON object references in the request body.
     refs: HashMap<String, JsonObject>,
+}
+
+/// The result of data extraction from the POST body for the directive.
+pub enum DirectiveDataExtraction<'a> {
+    /// JSON object.
+    Object(&'a JsonObject),
+    /// JSON array.
+    Array(Vec<&'a JsonObject>),
+    /// Other JSON type.
+    Other,
 }
 
 impl AqlContext<'_> {
     pub fn new(plane: &NodePlane, body: JsonObject) -> AqlContext {
         AqlContext {
             plane,
+            data: &body,
             refs: AqlContext::traverse_refs(body),
         }
+    }
+
+    /// Extracts directive data by looking up the directive JSON key's value on the request body.
+    pub fn extract_directive_data(&self, directive: &dyn Directive) -> DirectiveDataExtraction {
+        let key = format!("{}{}", DIRECTIVE_PREFIX, directive.key());
+
+        let data = self.data.get(key.as_str()).unwrap();
+
+        return match data {
+            Value::Array(v) => DirectiveDataExtraction::Array(map_values(v)),
+            Value::Object(v) => DirectiveDataExtraction::Object(v),
+            _ => DirectiveDataExtraction::Other,
+        };
     }
 
     pub fn plane(&self) -> &NodePlane {

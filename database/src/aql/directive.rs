@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::graph::node_plane::NodePlane;
+use crate::aql::context::AqlContext;
 use crate::lib::bson::JsonObject;
 
 pub type DirectiveList = Vec<Box<dyn Directive>>;
@@ -12,7 +12,7 @@ pub trait Directive: Sync + Send {
     /// The key name. Not the actual formatted JSON key.
     fn key(&self) -> &str;
     /// Execute the directive's action.
-    fn exec(&self, plane: &NodePlane) -> JsonObject;
+    fn exec(&self, ctx: &AqlContext) -> JsonObject;
 }
 
 impl Ord for dyn Directive {
