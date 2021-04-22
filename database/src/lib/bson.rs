@@ -1,12 +1,22 @@
-use crate::graph::node::CreateNodeData;
-use crate::graph::node_plane::NodePlane;
+use std::convert::TryFrom;
+use std::fs::File;
+
 use bson::{Bson, Document};
 use serde_json::{Map, Value};
-use std::convert::{TryFrom, TryInto};
-use std::fs::File;
+
+use crate::graph::node::CreateNodeData;
+use crate::graph::node_plane::NodePlane;
 
 /// Represents a serde json object.
 pub type JsonObject = Map<String, Value>;
+
+pub fn map_values(values: &Vec<Value>) -> Vec<&JsonObject> {
+    let mut acc: Vec<&JsonObject> = Vec::new();
+
+    values.iter().for_each(|v| acc.push(v.as_object().unwrap()));
+
+    acc
+}
 
 /// Encodes a bson string into a byte vector containing the bson chunk.
 pub fn encode(bson: &str) -> Vec<u8> {
