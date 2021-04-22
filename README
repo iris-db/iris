@@ -1,8 +1,8 @@
-Affinity README
+CallistoDB README
 
 The distributed graph database for modern data.
 
 COMPONENTS
 
-  afnctl - Cloud deployment manager.
-  afn - Database process.
+  callisto-ctl - Cloud deployment manager.
+  callisto - Database process.

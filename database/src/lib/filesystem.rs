@@ -1,7 +1,7 @@
 use std::fs;
 
-pub const DATA_PATH: &str = "affinity/data";
-pub const TEMP_PATH: &str = "affinity/temp";
+pub const DATA_PATH: &str = "callistodb/data";
+pub const TEMP_PATH: &str = "callistodb/temp";
 
 pub const PATHS: &[&str] = &[DATA_PATH, TEMP_PATH];
 
