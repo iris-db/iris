@@ -15,8 +15,7 @@ mod graph;
 mod io;
 mod lib;
 
-#[tokio::main]
-async fn main() {
+fn main() {
     filesystem::prepare();
     http::start_rest_server();
 }
