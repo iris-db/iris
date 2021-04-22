@@ -7,10 +7,10 @@
 #[macro_use]
 extern crate rocket;
 
-use crate::conn::http;
+use crate::aql::http;
 use crate::lib::filesystem;
 
-mod conn;
+mod aql;
 mod graph;
 mod io;
 mod lib;
