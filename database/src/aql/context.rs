@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::aql::directive::{Directive, DIRECTIVE_PREFIX};
-use crate::graph::node_plane::NodePlane;
+use crate::graph::graph::Graph;
 use crate::lib::bson::{map_values, JsonObject};
 use serde_json::Value;
 
@@ -10,8 +10,8 @@ const REF_KEY: &str = "$ref";
 
 /// Holds the refs and other metadata about the request.
 pub struct AqlContext<'a> {
-    /// Current node plane.
-    plane: &'a NodePlane,
+    /// Current node graph.
+    graph: &'a Graph,
     /// JSON object that contains the directive data. It is an array.
     data: &'a JsonObject,
     /// JSON object references in the request body.
@@ -29,12 +29,20 @@ pub enum DirectiveDataExtraction<'a> {
 }
 
 impl AqlContext<'_> {
-    pub fn new(plane: &NodePlane, body: JsonObject) -> AqlContext {
+    pub fn new<'a>(graph: &'a Graph, body: &'a JsonObject) -> AqlContext<'a> {
         AqlContext {
-            plane,
-            data: &body,
-            refs: AqlContext::traverse_refs(body),
+            graph,
+            data: body,
+            refs: AqlContext::traverse_refs(body.clone()),
         }
+    }
+
+    pub fn graph(&self) -> &Graph {
+        &self.graph
+    }
+
+    pub fn refs(&self) -> &HashMap<String, JsonObject> {
+        &self.refs
     }
 
     /// Extracts directive data by looking up the directive JSON key's value on the request body.
@@ -48,14 +56,6 @@ impl AqlContext<'_> {
             Value::Object(v) => DirectiveDataExtraction::Object(v),
             _ => DirectiveDataExtraction::Other,
         };
-    }
-
-    pub fn plane(&self) -> &NodePlane {
-        &self.plane
-    }
-
-    pub fn refs(&self) -> &HashMap<String, JsonObject> {
-        &self.refs
     }
 
     /// Traverses each JSON object for a reference.
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn test_ref_traversal() {
-        let p = NodePlane::new("TEST");
+        let p = Graph::new("TEST");
 
         let json = json!(
             {
@@ -128,7 +128,7 @@ mod tests {
             }
         );
 
-        let ctx = AqlContext::new(&p, json.as_object().unwrap().clone());
+        let ctx = AqlContext::new(&p, &json.as_object().unwrap());
         let refs = ctx.refs();
 
         assert!(refs.get("a").unwrap().eq(json!({

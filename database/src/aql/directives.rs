@@ -13,7 +13,7 @@ impl Directive for InsertDirective {
     fn exec(&self, ctx: &AqlContext) -> JsonObject {
         let x = ctx.extract_directive_data(self);
 
-        let plane = ctx.plane();
+        let graph = ctx.graph();
 
         serde_json::json!({}).as_object().unwrap().clone()
     }

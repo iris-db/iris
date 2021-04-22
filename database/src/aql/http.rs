@@ -6,7 +6,7 @@ use serde_json::json;
 
 use crate::aql::directive::DIRECTIVE_PREFIX;
 use crate::graph::database::Database;
-use crate::graph::node_plane::NodePlane;
+use crate::graph::graph::Graph;
 use crate::lib::bson::JsonObject;
 use rocket::config::{Environment, LoggingLevel};
 
@@ -31,30 +31,30 @@ pub fn start_rest_server() {
         .launch();
 }
 
-#[post("/<plane_name>", data = "<body>")]
+#[post("/graphs/<graph_name>", data = "<body>")]
 fn dispatch_query(
-    plane_name: String,
+    graph_name: String,
     body: Json<JsonObject>,
     ctx: State<RouteContext>,
 ) -> Json<JsonObject> {
     let db = ctx.db.lock().unwrap();
 
-    let planes = db.planes();
+    let graphs = db.graphs();
     let directives = db.directives();
 
-    let mut plane: Option<&Box<NodePlane>> = None;
+    let mut graph: Option<&Box<Graph>> = None;
 
-    for p in planes {
-        if p.name().eq(&plane_name) {
-            plane = Some(p);
+    for g in graphs {
+        if g.name().eq(&graph_name) {
+            graph = Some(g);
         }
     }
 
-    let plane = match plane {
+    let graph = match graph {
         Some(v) => v,
         None => {
             return Json(
-                json!({ "error": format!("Plane {} does not exist", plane_name) })
+                json!({ "error": format!("Graph {} does not exist", graph_name) })
                     .as_object()
                     .unwrap()
                     .clone(),
@@ -72,11 +72,11 @@ fn dispatch_query(
         };
 
         let directive = &directives[index];
-        let res = directive.exec(plane);
+        // let res = directive.exec(plane);
     }
 
     Json(
-        json!({ "completedOnPlane": plane_name })
+        json!({ "completedOnGraph": graph_name })
             .as_object()
             .unwrap()
             .clone(),

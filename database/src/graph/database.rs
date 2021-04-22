@@ -1,10 +1,10 @@
 use crate::aql::directive::{Directive, DirectiveList};
 use crate::aql::directives::InsertDirective;
-use crate::graph::node_plane::NodePlane;
+use crate::graph::graph::Graph;
 
 /// The in memory database.
 pub struct Database {
-    planes: Vec<Box<NodePlane>>,
+    graphs: Vec<Box<Graph>>,
     directives: DirectiveList,
     soft_memory_limit: usize,
     hard_memory_limit: usize,
@@ -16,29 +16,29 @@ impl Database {
         Database {
             soft_memory_limit: 0,
             hard_memory_limit: 0,
-            planes: Database::load_planes(),
+            graphs: Database::load_graphs(),
             directives: Database::register_directives(),
         }
     }
 
-    pub fn planes(&self) -> &Vec<Box<NodePlane>> {
-        &self.planes
+    pub fn graphs(&self) -> &Vec<Box<Graph>> {
+        &self.graphs
     }
 
-    pub fn planes_mut(&mut self) -> &mut Vec<Box<NodePlane>> {
-        &mut self.planes
+    pub fn graphs_mut(&mut self) -> &mut Vec<Box<Graph>> {
+        &mut self.graphs
     }
 
     pub fn directives(&self) -> &DirectiveList {
         &self.directives
     }
 
-    /// Load planes from disk.
-    fn load_planes() -> Vec<Box<NodePlane>> {
-        let mut planes = Vec::new();
-        planes.push(NodePlane::new("default"));
+    /// Load data stores from disk.
+    fn load_graphs() -> Vec<Box<Graph>> {
+        let mut graphs = Vec::new();
+        graphs.push(Graph::new("default"));
 
-        planes
+        graphs
     }
 
     /// Returns a vec of all registered directives.

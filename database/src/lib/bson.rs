@@ -4,8 +4,8 @@ use std::fs::File;
 use bson::{Bson, Document};
 use serde_json::{Map, Value};
 
+use crate::graph::graph::Graph;
 use crate::graph::node::CreateNodeData;
-use crate::graph::node_plane::NodePlane;
 
 /// Represents a serde json object.
 pub type JsonObject = Map<String, Value>;
@@ -30,7 +30,7 @@ pub fn encode(bson: &str) -> Vec<u8> {
 }
 
 /// Decodes all bson documents from a file and marshals them as a node.
-pub fn decode_file(mut file: File, plane: &mut NodePlane) {
+pub fn decode_file(mut file: File, graph: &mut Graph) {
     let mut acc: Vec<Document> = Vec::new();
 
     while let Ok(deserialized) = Document::from_reader(&mut file) {
@@ -43,7 +43,7 @@ pub fn decode_file(mut file: File, plane: &mut NodePlane) {
         .map(|d| CreateNodeData(Some(Bson::from(d).into_relaxed_extjson().to_string()), None))
         .collect();
 
-    plane.insert_nodes(Some(data));
+    graph.insert_nodes(Some(data));
 }
 
 #[cfg(test)]

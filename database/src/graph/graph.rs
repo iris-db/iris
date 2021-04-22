@@ -17,12 +17,12 @@ const MAX_NODE_SIZE: usize = 8000;
 const MAX_PAGE_SIZE: u64 = 16000;
 
 /// A collection of graph nodes.
-pub struct NodePlane {
-    /// The name of the plane.
+pub struct Graph {
+    /// The name of the graph.
     name: String,
     /// Next available id.
     cursor: IntCursor,
-    /// Nodes present within the plane. Always sorted by id.
+    /// Nodes present within the graph. Always sorted by id.
     nodes: Vec<Box<Node>>,
     /// Current page. A page is an 8KB file that contains serialized nodes. They are loaded into
     /// the nodes vec that tries to load as many nodes in memory as possible (generally the maximum
@@ -82,17 +82,17 @@ impl SerializationError {
 }
 
 /// Getters.
-impl NodePlane {
+impl Graph {
     pub fn name(&self) -> &String {
         &self.name
     }
 }
 
 /// Public API. This includes CRUD operations.
-impl NodePlane {
-    /// Creates a new node plane.
-    pub fn new(name: &str) -> Box<NodePlane> {
-        Box::from(NodePlane {
+impl Graph {
+    /// Creates a new node in the graph.
+    pub fn new(name: &str) -> Box<Graph> {
+        Box::from(Graph {
             name: name.to_string(),
             cursor: IntCursor::new(),
             nodes: Vec::new(),
@@ -100,7 +100,7 @@ impl NodePlane {
         })
     }
 
-    /// Inserts a set of nodes into the node plane.
+    /// Inserts a set of nodes into the graph.
     ///
     /// Returns the operation result and a vec of equal length to the nodes vec containing the
     /// node ids.
@@ -204,7 +204,7 @@ impl NodePlane {
 }
 
 /// Serialization API. Methods for serializing data to the disk.
-impl NodePlane {
+impl Graph {
     /// Serializes a node onto the filesystem.
     ///
     /// Returns the serialization time if successful.
@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn test_insert_node() {
-        let mut p = NodePlane::new("TEST");
+        let mut p = Graph::new("TEST");
 
         let mut data: Vec<CreateNodeData> = Vec::new();
         data.push(CreateNodeData(
@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn test_delete_node_by_id() {
-        let mut p = NodePlane::new("TEST");
+        let mut p = Graph::new("TEST");
 
         let mut data: Vec<CreateNodeData> = Vec::new();
         // 3 empty nodes.
@@ -319,7 +319,7 @@ mod tests {
 
     #[bench]
     fn bench_insert_nodes(b: &mut Bencher) {
-        let mut p = NodePlane::new("TEST");
+        let mut p = Graph::new("TEST");
 
         b.iter(|| {
             let mut data: Vec<CreateNodeData> = Vec::new();
