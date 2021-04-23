@@ -259,74 +259,83 @@ mod tests {
   use test::Bencher;
 
   use super::*;
+  use crate::lib::filesystem;
   use std::path::Path;
 
   #[test]
   fn test_insert_node() {
-    let mut p = Graph::new("TEST");
+    filesystem::prepare();
 
-    let mut data: Vec<CreateNodeData> = Vec::new();
-    data.push(CreateNodeData(
-      Some("{ \"hello\": \"world\" }".to_string()),
-      None,
-    ));
-    data.push(CreateNodeData(
-      Some("{ \"hello\": \"world\" }".to_string()),
-      None,
-    ));
-    data.push(CreateNodeData(
-      Some("{ \"hello\": \"world\" }".to_string()),
-      None,
-    ));
+    let mut g = Graph::new("TEST");
 
-    let res = match p.insert_nodes(Some(data)) {
+    let data: Vec<CreateNodeData> = vec![
+      CreateNodeData(Some("{ \"hello\": \"world\" }".to_string()), None),
+      CreateNodeData(Some("{ \"super\": \"cool\" }".to_string()), None),
+      CreateNodeData(Some("{ \"amazing\": \"json\" }".to_string()), None),
+    ];
+
+    let res = match g.insert_nodes(Some(data)) {
       Ok(v) => v,
-      Err(e) => panic!("{}", e),
+      Err(e) => {
+        filesystem::destroy();
+        panic!("{}", e);
+      }
     };
 
     assert!(Path::new(format!("{}/{}", DATA_PATH, "TEST.0").as_str()).exists());
     assert_eq!(res.0.count, 3);
     assert_eq!(res.1.len(), 3);
+
+    filesystem::destroy();
   }
 
   #[test]
   fn test_delete_node_by_id() {
-    let mut p = Graph::new("TEST");
+    filesystem::prepare();
 
-    let mut data: Vec<CreateNodeData> = Vec::new();
-    // 3 empty nodes.
-    data.push(CreateNodeData(None, None));
-    data.push(CreateNodeData(None, None));
-    data.push(CreateNodeData(None, None));
+    let mut g = Graph::new("TEST");
 
-    match p.insert_nodes(Some(data)) {
-      Err(e) => panic!("{}", e),
+    let data: Vec<CreateNodeData> = vec![
+      CreateNodeData(None, None),
+      CreateNodeData(None, None),
+      CreateNodeData(None, None),
+    ];
+
+    match g.insert_nodes(Some(data)) {
+      Err(e) => {
+        filesystem::destroy();
+        panic!("{}", e);
+      }
       _ => {}
     };
 
-    let res_a = p.delete_node_by_id(0);
+    let res_a = g.delete_node_by_id(0);
     assert_eq!(res_a.count, 1);
 
-    let res_c = p.delete_node_by_id(2);
+    let res_c = g.delete_node_by_id(2);
     assert_eq!(res_c.count, 1);
 
-    let res_b = p.delete_node_by_id(1);
+    let res_b = g.delete_node_by_id(1);
     assert_eq!(res_b.count, 1);
 
-    let res_err = p.delete_node_by_id(4);
+    let res_err = g.delete_node_by_id(4);
     assert_eq!(res_err.count, 0);
   }
 
   #[bench]
   fn bench_insert_nodes(b: &mut Bencher) {
-    let mut p = Graph::new("TEST");
+    filesystem::prepare();
+
+    let mut g = Graph::new("TEST");
 
     b.iter(|| {
-      let mut data: Vec<CreateNodeData> = Vec::new();
-      data.push(CreateNodeData(Some("{}".to_string()), None));
+      let data: Vec<CreateNodeData> = vec![CreateNodeData(Some("{}".to_string()), None)];
 
-      match p.insert_nodes(Some(data)) {
-        Err(e) => panic!("{}", e),
+      match g.insert_nodes(Some(data)) {
+        Err(e) => {
+          filesystem::destroy();
+          panic!("{}", e);
+        }
         _ => {}
       }
     });

@@ -13,3 +13,12 @@ pub fn prepare() {
     });
   }
 }
+
+// Destroys file system directories.
+pub fn destroy() {
+  for path in PATHS {
+    fs::remove_dir_all(path).err().and_then(|e| -> Option<()> {
+      panic!("{}", e.to_string());
+    });
+  }
+}

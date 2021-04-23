@@ -3,7 +3,7 @@ use crate::aql::directive::Directive;
 use crate::lib::bson::JsonObject;
 
 /// Insert a document into a graph.
-pub struct InsertDirective {}
+pub struct InsertDirective;
 
 impl Directive for InsertDirective {
   fn key(&self) -> &str {

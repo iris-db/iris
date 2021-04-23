@@ -35,14 +35,11 @@ impl Database {
 
   /// Load data stores from disk.
   fn load_graphs() -> Vec<Box<Graph>> {
-    let mut graphs = Vec::new();
-    graphs.push(Graph::new("default"));
-
-    graphs
+    vec![Graph::new("default")]
   }
 
   /// Returns a vec of all registered directives.
   fn register_directives() -> DirectiveList {
-    vec![Box::from(InsertDirective {})]
+    vec![Box::from(InsertDirective)]
   }
 }
