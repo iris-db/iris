@@ -7,13 +7,29 @@ use serde_json::{Map, Value};
 use crate::graph::graph::Graph;
 use crate::graph::node::CreateNodeData;
 
-/// Represents a serde json object.
+/// Type alias for an unknown JSON object.
 pub type JsonObject = Map<String, Value>;
 
-pub fn map_values(values: &Vec<Value>) -> Vec<&JsonObject> {
-  let mut acc: Vec<&JsonObject> = Vec::new();
+pub trait IntoJsonObject {
+  fn into(self) -> JsonObject;
+}
 
-  values.iter().for_each(|v| acc.push(v.as_object().unwrap()));
+impl IntoJsonObject for Value {
+  fn into(self) -> JsonObject {
+    return match self.is_object() {
+      true => self.as_object().unwrap().clone(),
+      false => JsonObject::new(),
+    };
+  }
+}
+
+/// Converts a vec of Value to a vec of JsonObject.
+pub fn values_to_objects(values: &Vec<Value>) -> Vec<JsonObject> {
+  let mut acc: Vec<JsonObject> = Vec::new();
+
+  values
+    .iter()
+    .for_each(|v| acc.push(v.as_object().unwrap().clone()));
 
   acc
 }
