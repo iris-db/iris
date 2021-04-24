@@ -12,7 +12,6 @@ use crate::lib::filesystem;
 
 mod aql;
 mod graph;
-mod io;
 mod lib;
 
 fn main() {
