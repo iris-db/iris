@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
-use crate::aql::directive::{Directive, DIRECTIVE_PREFIX};
 use crate::graph::graph::Graph;
-use crate::lib::bson::{map_values, JsonObject};
-use serde_json::Value;
+use crate::lib::bson::JsonObject;
 
 /// The JSON key that denotes a reference.
 const REF_KEY: &str = "$ref";
@@ -11,51 +9,20 @@ const REF_KEY: &str = "$ref";
 /// Holds the refs and other metadata about the request.
 pub struct AqlContext<'a> {
   /// Current node graph.
-  graph: &'a Graph,
+  pub graph: &'a Box<Graph>,
   /// JSON object that contains the directive data. It is an array.
-  data: &'a JsonObject,
+  pub data: JsonObject,
   /// JSON object references in the request body.
-  refs: HashMap<String, JsonObject>,
-}
-
-/// The result of data extraction from the POST body for the directive.
-pub enum DirectiveDataExtraction<'a> {
-  /// JSON object.
-  Object(&'a JsonObject),
-  /// JSON array.
-  Array(Vec<&'a JsonObject>),
-  /// Other JSON type.
-  Other,
+  pub refs: HashMap<String, JsonObject>,
 }
 
 impl AqlContext<'_> {
-  pub fn new<'a>(graph: &'a Graph, body: &'a JsonObject) -> AqlContext<'a> {
+  pub fn new(graph: &Box<Graph>, body: JsonObject) -> AqlContext {
     AqlContext {
       graph,
-      data: body,
-      refs: AqlContext::traverse_refs(body.clone()),
+      data: body.clone(),
+      refs: AqlContext::traverse_refs(body),
     }
-  }
-
-  pub fn graph(&self) -> &Graph {
-    &self.graph
-  }
-
-  pub fn refs(&self) -> &HashMap<String, JsonObject> {
-    &self.refs
-  }
-
-  /// Extracts directive data by looking up the directive JSON key's value on the request body.
-  pub fn extract_directive_data(&self, directive: &dyn Directive) -> DirectiveDataExtraction {
-    let key = format!("{}{}", DIRECTIVE_PREFIX, directive.key());
-
-    let data = self.data.get(key.as_str()).unwrap();
-
-    return match data {
-      Value::Array(v) => DirectiveDataExtraction::Array(map_values(v)),
-      Value::Object(v) => DirectiveDataExtraction::Object(v),
-      _ => DirectiveDataExtraction::Other,
-    };
   }
 
   /// Traverses each JSON object for a reference.
@@ -92,10 +59,14 @@ mod tests {
   use serde_json::json;
 
   use super::*;
+  use crate::aql::directive::{
+    extract_directive_data, Directive, DirectiveDataExtraction, DirectiveResult,
+  };
+  use crate::lib::bson::IntoJsonObject;
 
   #[test]
   fn test_extract_directive_data() {
-    let g = Graph::new("TEST");
+    let g = &Graph::new("TEST");
 
     let json = json!(
       {
@@ -114,7 +85,7 @@ mod tests {
       }
     );
 
-    let ctx = AqlContext::new(&g, &json.as_object().unwrap());
+    let ctx = AqlContext::new(g, json.as_object().unwrap().clone());
 
     struct TestDirective {}
 
@@ -123,12 +94,14 @@ mod tests {
         "insert"
       }
 
-      fn exec(&self, _ctx: &AqlContext) -> JsonObject {
+      fn exec(&self, ctx: &mut AqlContext) -> DirectiveResult {
         todo!()
       }
     }
 
-    let data = ctx.extract_directive_data(&TestDirective {});
+    let directive = &TestDirective {};
+    let data = extract_directive_data(directive, IntoJsonObject::into(json));
+
     let data = match data {
       DirectiveDataExtraction::Array(v) => v,
       _ => panic!("Expected an object"),
@@ -154,7 +127,7 @@ mod tests {
 
   #[test]
   fn test_ref_traversal() {
-    let g = Graph::new("TEST");
+    let g = &Graph::new("TEST");
 
     let json = json!(
       {
@@ -187,8 +160,8 @@ mod tests {
       }
     );
 
-    let ctx = AqlContext::new(&g, &json.as_object().unwrap());
-    let refs = ctx.refs();
+    let ctx = AqlContext::new(g, json.as_object().unwrap().clone());
+    let refs = ctx.refs;
 
     assert!(
       refs.get("a").unwrap().eq(
