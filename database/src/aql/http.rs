@@ -1,14 +1,15 @@
 use std::sync::Mutex;
 
+use rocket::config::{Environment, LoggingLevel};
 use rocket::{Config, State};
 use rocket_contrib::json::Json;
-use serde_json::json;
+use serde_json::{json, Value};
 
+use crate::aql::context::AqlContext;
 use crate::aql::directive::DIRECTIVE_PREFIX;
 use crate::graph::database::Database;
 use crate::graph::graph::Graph;
-use crate::lib::bson::JsonObject;
-use rocket::config::{Environment, LoggingLevel};
+use crate::lib::bson::{IntoJsonObject, JsonObject};
 
 /// Rocket route context.
 struct RouteContext {
@@ -18,6 +19,8 @@ struct RouteContext {
 /// Starts the rest server.
 pub fn start_rest_server() {
   let db = Database::new();
+
+  println!("Started rest server");
 
   let config = Config::build(Environment::Staging)
     .port(6000)
@@ -63,6 +66,9 @@ fn dispatch_query(
   };
 
   let data = body.0;
+
+  let mut ctx = AqlContext::new(graph, data);
+
   for k in data.keys() {
     let index = directives.binary_search_by(|d| format!("{}{}", DIRECTIVE_PREFIX, d.key()).cmp(k));
     let index = match index {
@@ -71,7 +77,12 @@ fn dispatch_query(
     };
 
     let directive = &directives[index];
-    // let res = directive.exec(plane);
+
+    let res = directive.exec(&mut ctx);
+    let res = match res {
+      Ok(v) => v,
+      Err(v) => IntoJsonObject::into(v),
+    };
   }
 
   Json(
