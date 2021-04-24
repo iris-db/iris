@@ -6,10 +6,11 @@ use std::io::{Error, Write};
 use std::time::Instant;
 use std::{fmt, fs};
 
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use crate::graph::node::{CreateNodeData, Node, NodeId};
-use crate::lib::bson::encode;
+use crate::lib::bson::{encode, IntoJsonObject, JsonObject};
 use crate::lib::filesystem::DATA_PATH;
 use crate::lib::uid::IntCursor;
 
@@ -31,9 +32,10 @@ pub struct Graph {
 }
 
 /// Result of a crud operation.
+#[derive(Serialize, Deserialize)]
 pub struct CrudOperationResult {
-  count: u32,
-  time: u128,
+  pub count: u32,
+  pub time: u128,
 }
 
 /// Error that occurs while serializing a node. Errors can be caused by the filesystem or a node
@@ -43,6 +45,30 @@ pub enum SerializationError {
   Filesystem(Error),
   /// Caused by a node exceeded the maximum node size.
   NodeSizeExceeded(NodeId),
+}
+
+impl IntoJsonObject for SerializationError {
+  fn into(self) -> JsonObject {
+    return match self {
+      SerializationError::Filesystem(e) => {
+        let s = e.to_string();
+
+        IntoJsonObject::into(json!({
+          "error": {
+            "msg": format!("CRITICAL FILESYSTEM ERROR: {}", s),
+            "data": s
+          }
+        }))
+      }
+
+      SerializationError::NodeSizeExceeded(id) => IntoJsonObject::into(json!({
+        "error": {
+          "msg": format!("[Node Id: {}] Exceeded the maximum node size of {} bytes", id, MAX_NODE_SIZE),
+          "data": id
+        }
+      })),
+    };
+  }
 }
 
 impl Display for SerializationError {
@@ -55,29 +81,6 @@ impl Display for SerializationError {
         write!(f, "[NodeSizeExceeded] SerializationError: {}", id)
       }
     };
-  }
-}
-
-/// Methods for marshaling errors into JSON error objects.
-impl SerializationError {
-  fn marshal_filesystem_error(e: Error) -> Value {
-    let s = e.to_string();
-
-    json!({
-      "error": {
-        "msg": format!("CRITICAL FILESYSTEM ERROR: {}", s),
-        "data": s
-      }
-    })
-  }
-
-  fn marshal_node_size_exceeded_error(id: NodeId) -> Value {
-    json!({
-      "error": {
-        "msg": format!("[Node Id: {}] Exceeded the maximum node size of {} bytes", id, MAX_NODE_SIZE),
-        "data": id
-      }
-    })
   }
 }
 
@@ -256,11 +259,12 @@ impl Graph {
 
 #[cfg(test)]
 mod tests {
+  use std::path::Path;
   use test::Bencher;
 
-  use super::*;
   use crate::lib::filesystem;
-  use std::path::Path;
+
+  use super::*;
 
   #[test]
   fn test_insert_node() {
