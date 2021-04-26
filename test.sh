@@ -2,6 +2,7 @@
 
 # Executes tests by category
 
+
 DOCKERFILE_PATH=.
 E2E_TEST_ENTRY_PATH=e2e/run_tests.py
 
@@ -49,6 +50,8 @@ function test_e2e {
 
 
 # Main
+
+set -e
 
 case "$1" in
 	-u|--unit)    TEST_SET="unit"             ;;
