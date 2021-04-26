@@ -94,13 +94,6 @@ impl Display for SerializationError {
   }
 }
 
-/// Getters.
-impl Graph {
-  pub fn name(&self) -> &String {
-    &self.name
-  }
-}
-
 /// Public API. This includes CRUD operations.
 impl Graph {
   /// Creates a new node in the graph.
