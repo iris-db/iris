@@ -1,5 +1,5 @@
 [package]
-name = "database"
+name = "callistodb"
 version = "0.1.0"
 authors = ["Esteban Garcia <estebangarcia2121@gmail.com>"]
 edition = "2018"
@@ -23,5 +23,5 @@ default-features = false
 features = ["json"]
 
 [[bin]]
-name = "server"
-path = "src/server.rs"
+name = "callistodb"
+path = "src/callistodb.rs"
