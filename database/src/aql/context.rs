@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::graph::graph::Graph;
-use crate::lib::bson::{Json, JsonObject};
+use crate::lib::bson::JsonObject;
 
 /// The JSON key that denotes a reference.
 const REF_KEY: &str = "$ref";
@@ -61,13 +61,12 @@ mod tests {
   use crate::aql::directive::{
     extract_directive_data, Directive, DirectiveDataExtraction, DirectiveResult,
   };
+  use crate::lib::bson::Json;
 
   use super::*;
 
   #[test]
   fn test_extract_directive_data() {
-    let g = &mut Graph::new("TEST");
-
     let json = Json::from(json!(
       {
         "$insert": [
@@ -83,10 +82,7 @@ mod tests {
           }
         ]
       }
-    ))
-    .to_object_ref();
-
-    let ctx = AqlContext::new(g, json);
+    ));
 
     struct TestDirective {}
 
@@ -95,13 +91,13 @@ mod tests {
         "insert"
       }
 
-      fn exec(&self, ctx: &mut AqlContext) -> DirectiveResult {
+      fn exec(&self, _ctx: &mut AqlContext) -> DirectiveResult {
         todo!()
       }
     }
 
     let directive = &TestDirective {};
-    let data = extract_directive_data(directive, json);
+    let data = extract_directive_data(directive, json.to_object_ref());
 
     let data = match data {
       DirectiveDataExtraction::Array(v) => v,
@@ -158,10 +154,9 @@ mod tests {
           }
         ]
       }
-    ))
-    .to_object_ref();
+    ));
 
-    let ctx = AqlContext::new(g, json);
+    let ctx = AqlContext::new(g, json.to_object_ref());
     let refs = ctx.refs;
 
     assert!(

@@ -60,7 +60,7 @@ pub enum SerializationError {
 impl Into<JsonObject> for &SerializationError {
   fn into(self) -> JsonObject {
     return match self {
-      SerializationError::Filesystem(e) => {
+			SerializationError::Filesystem(e) => {
         let s = e.to_string();
 
         Json::from(json!({
