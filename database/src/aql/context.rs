@@ -1,46 +1,46 @@
 use std::collections::HashMap;
 
 use crate::graph::graph::Graph;
-use crate::lib::bson::JsonObject;
+use crate::lib::bson::{Json, JsonObject};
 
 /// The JSON key that denotes a reference.
 const REF_KEY: &str = "$ref";
 
 /// Holds the refs and other metadata about the request.
-pub struct AqlContext<'a> {
+pub struct AqlContext<'a, 'b> {
   /// Current node graph.
-  pub graph: &'a Box<Graph>,
+  pub graph: &'a mut Box<Graph>,
   /// JSON object that contains the directive data. It is an array.
-  pub data: JsonObject,
+  pub data: &'b JsonObject,
   /// JSON object references in the request body.
   pub refs: HashMap<String, JsonObject>,
 }
 
-impl AqlContext<'_> {
-  pub fn new(graph: &Box<Graph>, body: JsonObject) -> AqlContext {
+impl AqlContext<'_, '_> {
+  pub fn new<'a, 'b>(graph: &'a mut Box<Graph>, body: &'b JsonObject) -> AqlContext<'a, 'b> {
     AqlContext {
       graph,
-      data: body.clone(),
+      data: body,
       refs: AqlContext::traverse_refs(body),
     }
   }
 
   /// Traverses each JSON object for a reference.
-  fn traverse_refs(json: JsonObject) -> HashMap<String, JsonObject> {
-    fn traverse_object(tree: &mut HashMap<String, JsonObject>, ch: JsonObject) {
-      for (k, v) in &ch {
+  fn traverse_refs(json: &JsonObject) -> HashMap<String, JsonObject> {
+    fn traverse_object(tree: &mut HashMap<String, JsonObject>, ch: &JsonObject) {
+      for (k, v) in ch {
         if k == REF_KEY && v.is_string() {
           tree.insert(v.as_str().unwrap().to_string(), ch.clone());
         }
 
         if v.is_object() {
-          traverse_object(tree, v.as_object().unwrap().clone());
+          traverse_object(tree, v.as_object().unwrap());
           return;
         }
 
         if v.is_array() {
           for v in v.as_array().unwrap() {
-            traverse_object(tree, v.as_object().unwrap().clone());
+            traverse_object(tree, v.as_object().unwrap());
           }
         }
       }
@@ -58,17 +58,17 @@ impl AqlContext<'_> {
 mod tests {
   use serde_json::json;
 
-  use super::*;
   use crate::aql::directive::{
     extract_directive_data, Directive, DirectiveDataExtraction, DirectiveResult,
   };
-  use crate::lib::bson::IntoJsonObject;
+
+  use super::*;
 
   #[test]
   fn test_extract_directive_data() {
-    let g = &Graph::new("TEST");
+    let g = &mut Graph::new("TEST");
 
-    let json = json!(
+    let json = Json::from(json!(
       {
         "$insert": [
           {
@@ -83,9 +83,10 @@ mod tests {
           }
         ]
       }
-    );
+    ))
+    .to_object_ref();
 
-    let ctx = AqlContext::new(g, json.as_object().unwrap().clone());
+    let ctx = AqlContext::new(g, json);
 
     struct TestDirective {}
 
@@ -100,7 +101,7 @@ mod tests {
     }
 
     let directive = &TestDirective {};
-    let data = extract_directive_data(directive, IntoJsonObject::into(json));
+    let data = extract_directive_data(directive, json);
 
     let data = match data {
       DirectiveDataExtraction::Array(v) => v,
@@ -109,7 +110,7 @@ mod tests {
 
     assert!(
       data[0].eq(
-        json!({
+        Json::from(json!({
             "$ref": "c",
             "data": {
               "age": 32,
@@ -118,18 +119,17 @@ mod tests {
                 "theme": "dark"
               }
             }
-        })
-        .as_object()
-        .unwrap()
+        }))
+        .to_object_ref()
       )
     );
   }
 
   #[test]
   fn test_ref_traversal() {
-    let g = &Graph::new("TEST");
+    let g = &mut Graph::new("TEST");
 
-    let json = json!(
+    let json = Json::from(json!(
       {
         "$get": [
           {
@@ -158,40 +158,39 @@ mod tests {
           }
         ]
       }
-    );
+    ))
+    .to_object_ref();
 
-    let ctx = AqlContext::new(g, json.as_object().unwrap().clone());
+    let ctx = AqlContext::new(g, json);
     let refs = ctx.refs;
 
     assert!(
       refs.get("a").unwrap().eq(
-        json!({
+        Json::from(json!({
           "$ref": "a",
           "a": "b"
-        })
-        .as_object()
-        .unwrap()
+        }))
+        .to_object_ref()
       )
     );
 
     assert!(
       refs.get("b").unwrap().eq(
-        json!({
+        Json::from(json!({
           "$ref": "b",
           "username": "Steve",
           "name": {
             "first": "John",
             "last": "Smith"
           }
-        })
-        .as_object()
-        .unwrap()
+        }))
+        .to_object_ref()
       )
     );
 
     assert!(
       refs.get("c").unwrap().eq(
-        json!({
+        Json::from(json!({
           "$ref": "c",
           "data": {
             "age": 32,
@@ -200,9 +199,8 @@ mod tests {
               "theme": "dark"
             }
           }
-        })
-        .as_object()
-        .unwrap()
+        }))
+        .to_object_ref()
       )
     );
   }

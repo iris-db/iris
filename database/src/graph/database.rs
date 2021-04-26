@@ -1,10 +1,17 @@
-use crate::aql::directive::{Directive, DirectiveList};
+use std::array::IntoIter;
+use std::collections::HashMap;
+use std::iter::FromIterator;
+
+use crate::aql::directive::DirectiveList;
 use crate::aql::directives::InsertDirective;
 use crate::graph::graph::Graph;
+use std::sync::Arc;
+
+pub type Graphs = HashMap<String, Box<Graph>>;
 
 /// The in memory database.
 pub struct Database {
-  graphs: Vec<Box<Graph>>,
+  graphs: Graphs,
   directives: DirectiveList,
   soft_memory_limit: usize,
   hard_memory_limit: usize,
@@ -21,25 +28,21 @@ impl Database {
     }
   }
 
-  pub fn graphs(&self) -> &Vec<Box<Graph>> {
-    &self.graphs
+  pub fn ctx_data(&mut self) -> (&mut Graphs, &mut DirectiveList) {
+    (&mut self.graphs, &mut self.directives)
   }
 
-  pub fn graphs_mut(&mut self) -> &mut Vec<Box<Graph>> {
-    &mut self.graphs
-  }
-
-  pub fn directives(&self) -> &DirectiveList {
-    &self.directives
+  pub fn directives_mut(&mut self) -> &mut DirectiveList {
+    &mut self.directives
   }
 
   /// Load data stores from disk.
-  fn load_graphs() -> Vec<Box<Graph>> {
-    vec![Graph::new("default")]
+  fn load_graphs() -> Graphs {
+    HashMap::from_iter(IntoIter::new([("".to_string(), Graph::new(""))]))
   }
 
   /// Returns a vec of all registered directives.
   fn register_directives() -> DirectiveList {
-    vec![Box::from(InsertDirective)]
+    vec![Arc::new(InsertDirective)]
   }
 }

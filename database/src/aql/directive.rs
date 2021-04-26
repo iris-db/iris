@@ -4,11 +4,12 @@ use serde_json::{json, Value};
 
 use crate::aql::context::AqlContext;
 use crate::graph::graph::SerializationError;
-use crate::lib::bson::{values_to_objects, IntoJsonObject, JsonObject};
+use crate::lib::bson::{values_to_objects, JsonObject};
+use std::sync::Arc;
 
-pub type DirectiveResult<'a> = Result<JsonObject, DirectiveError<'a>>;
+pub type DirectiveResult<'a> = Result<JsonObject, DirectiveErrorType<'a>>;
 
-pub type DirectiveList = Vec<Box<dyn Directive>>;
+pub type DirectiveList = Vec<Arc<dyn Directive>>;
 
 /// JSON key prefix that all directives have.
 pub const DIRECTIVE_PREFIX: &str = "$";
@@ -47,39 +48,39 @@ pub enum DirectiveErrorType<'a> {
   Serialization(SerializationError),
 }
 
-impl IntoJsonObject for DirectiveError<'_> {
+impl Into<JsonObject> for DirectiveError<'_> {
   fn into(self) -> JsonObject {
-    let data: Value = match self.err_type {
+    let err_type = &self.err_type;
+
+    let data: Value = match err_type {
       DirectiveErrorType::MissingKey(v) => json!({ "key": v }),
       DirectiveErrorType::InvalidType(v) => json!({ "type": v }),
-      DirectiveErrorType::Serialization(v) => IntoJsonObject::into(v).into(),
+      DirectiveErrorType::Serialization(v) => Value::Object(v.into()),
     };
 
     let mut json = JsonObject::new();
 
     json.insert("directive".to_string(), json!(self.directive_key));
-    json.insert("msg".to_string(), self.err_message());
+    json.insert("msg".to_string(), get_err_message(err_type));
     json.insert("data".to_string(), data);
 
     json
   }
 }
 
-impl DirectiveError<'_> {
-  fn err_message(&self) -> Value {
-    return match self.err_type {
-      DirectiveErrorType::MissingKey(v) => format!("Missing key: {}", v).into(),
-      DirectiveErrorType::InvalidType(v) => format!("Invalid type: {}", v).into(),
-      DirectiveErrorType::Serialization(_) => "Serialization error".to_string().into(),
-    };
-  }
+fn get_err_message(t: &DirectiveErrorType) -> Value {
+  return match t {
+    DirectiveErrorType::MissingKey(v) => format!("Missing key: {}", v).into(),
+    DirectiveErrorType::InvalidType(v) => format!("Invalid type: {}", v).into(),
+    DirectiveErrorType::Serialization(_) => "Serialization error".to_string().into(),
+  };
 }
 
 /// Extracts directive data by looking up the directive JSON key's value on the request body.
-pub fn extract_directive_data(
+pub fn extract_directive_data<'a>(
   directive: &dyn Directive,
-  data: JsonObject,
-) -> DirectiveDataExtraction {
+  data: &'a JsonObject,
+) -> DirectiveDataExtraction<'a> {
   let key = format!("{}{}", DIRECTIVE_PREFIX, directive.key());
 
   let data = data.get(key.as_str()).unwrap();

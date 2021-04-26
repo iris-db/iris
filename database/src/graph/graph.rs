@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::graph::node::{CreateNodeData, Node, NodeId};
-use crate::lib::bson::{encode, IntoJsonObject, JsonObject};
+use crate::lib::bson::{encode, Json, JsonObject};
 use crate::lib::filesystem::DATA_PATH;
 use crate::lib::uid::IntCursor;
 
@@ -38,6 +38,16 @@ pub struct CrudOperationResult {
   pub time: u128,
 }
 
+impl Into<JsonObject> for CrudOperationResult {
+  fn into(self) -> JsonObject {
+    serde_json::to_value(self)
+      .unwrap()
+      .as_object()
+      .unwrap()
+      .clone()
+  }
+}
+
 /// Error that occurs while serializing a node. Errors can be caused by the filesystem or a node
 /// format error, such as exceeding the maximum node size.
 pub enum SerializationError {
@@ -47,26 +57,26 @@ pub enum SerializationError {
   NodeSizeExceeded(NodeId),
 }
 
-impl IntoJsonObject for SerializationError {
+impl Into<JsonObject> for &SerializationError {
   fn into(self) -> JsonObject {
     return match self {
       SerializationError::Filesystem(e) => {
         let s = e.to_string();
 
-        IntoJsonObject::into(json!({
+        Json::from(json!({
           "error": {
             "msg": format!("CRITICAL FILESYSTEM ERROR: {}", s),
             "data": s
           }
-        }))
+        })).to_object()
       }
 
-      SerializationError::NodeSizeExceeded(id) => IntoJsonObject::into(json!({
+      SerializationError::NodeSizeExceeded(id) => Json::from(json!({
         "error": {
           "msg": format!("[Node Id: {}] Exceeded the maximum node size of {} bytes", id, MAX_NODE_SIZE),
           "data": id
         }
-      })),
+      })).to_object()
     };
   }
 }

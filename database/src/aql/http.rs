@@ -1,15 +1,16 @@
+use std::borrow::BorrowMut;
 use std::sync::Mutex;
 
 use rocket::config::{Environment, LoggingLevel};
 use rocket::{Config, State};
 use rocket_contrib::json::Json;
-use serde_json::{json, Value};
+use serde_json::json;
 
 use crate::aql::context::AqlContext;
-use crate::aql::directive::DIRECTIVE_PREFIX;
+use crate::aql::directive::{DirectiveError, DIRECTIVE_PREFIX};
 use crate::graph::database::Database;
 use crate::graph::graph::Graph;
-use crate::lib::bson::{IntoJsonObject, JsonObject};
+use crate::lib::bson::JsonObject;
 
 /// Rocket route context.
 struct RouteContext {
@@ -40,18 +41,11 @@ fn dispatch_query(
   body: Json<JsonObject>,
   ctx: State<RouteContext>,
 ) -> Json<JsonObject> {
-  let db = ctx.db.lock().unwrap();
+  let mut db = ctx.db.lock().unwrap();
 
-  let graphs = db.graphs();
-  let directives = db.directives();
+  let (graphs, directives) = db.ctx_data();
 
-  let mut graph: Option<&Box<Graph>> = None;
-
-  for g in graphs {
-    if g.name().eq(&graph_name) {
-      graph = Some(g);
-    }
-  }
+  let graph: Option<&mut Box<Graph>> = graphs.get_mut(graph_name.as_str());
 
   let graph = match graph {
     Some(v) => v,
@@ -67,7 +61,7 @@ fn dispatch_query(
 
   let data = body.0;
 
-  let mut ctx = AqlContext::new(graph, data);
+  let mut ctx = AqlContext::new(graph, &data);
 
   for k in data.keys() {
     let index = directives.binary_search_by(|d| format!("{}{}", DIRECTIVE_PREFIX, d.key()).cmp(k));
@@ -79,9 +73,13 @@ fn dispatch_query(
     let directive = &directives[index];
 
     let res = directive.exec(&mut ctx);
-    let res = match res {
+    let _res = match res {
       Ok(v) => v,
-      Err(v) => IntoJsonObject::into(v),
+      Err(v) => DirectiveError {
+        directive_key: k,
+        err_type: v,
+      }
+      .into(),
     };
   }
 
