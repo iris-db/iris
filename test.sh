@@ -27,10 +27,10 @@ function check_cmd_exists {
 function test_unit {
 	check_cmd_exists cargo
 
-	MANIFEST="--manifest-path database/Cargo.toml"
+	MANIFEST="database/Cargo.toml"
 
-	cargo build "$MANIFEST"
-	cargo test "$MANIFEST"
+	cargo +nightly build --manifest-path "$MANIFEST"
+	cargo +nightly test --manifest-path "$MANIFEST"
 }
 
 function test_e2e {

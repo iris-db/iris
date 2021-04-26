@@ -17,4 +17,4 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run unit tests
-        run: ./test.sh -u
+        run: rustup install nightly && ./test.sh -u
