@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-# Executes tests by category.
+# Executes tests by category
 
 DOCKERFILE_PATH=.
 E2E_TEST_ENTRY_PATH=e2e/run_tests.py
+
+# Util
 
 function help_msg {
 	echo "\
@@ -20,27 +22,44 @@ function check_cmd_exists {
 	fi
 }
 
-# Main loop.
+# Tests
 
-case $1 in
-	db)
-		check_cmd_exists cargo
+function test_unit {
+	check_cmd_exists cargo
 
-		cargo test --manifest-path database/Cargo.toml
-		;;
-	e2e)
-		check_cmd_exists docker
-		check_cmd_exists python3
+	cargo test --manifest-path database/Cargo.toml
+}
 
-		TAG=callistodb/test-e2e
+function test_e2e {
+	check_cmd_exists docker
+	check_cmd_exists python3
 
-		docker build $DOCKERFILE_PATH -t $TAG
-		docker run $TAG
+	TAG=callistodb/test-e2e
 
-		python3 $E2E_TEST_ENTRY_PATH
+	docker build $DOCKERFILE_PATH -t $TAG
+	docker run $TAG
 
-		docker rm -f $TAG
-		;;
-	*)
-		help_msg
+	python3 $E2E_TEST_ENTRY_PATH
+
+	docker rm -f $TAG
+}
+
+
+# Main
+
+case "$1" in
+	-u|--unit)    TEST_SET="unit"             ;;
+	-e|--e2e)     TEST_SET="e2e"              ;;
+	-c|--cluster) TEST_SET="cluster"          ;;
+	-a|--all)     TEST_SET="unit:cluster:e2e" ;;
+	*)            help_msg; exit 0            ;;
 esac
+
+TEST_SEP=':' read -r -a TESTS <<< "$TEST_SET"
+
+for TEST in "${TESTS[@]}"
+do
+	"test_$TEST"
+done
+
+echo "Tests completed"
