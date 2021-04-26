@@ -2,8 +2,8 @@ use std::array::IntoIter;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use crate::aql::directive::DirectiveList;
-use crate::aql::directives::InsertDirective;
+use crate::aql::directive::{Directive, DirectiveList};
+use crate::aql::directives::{DeleteDirective, InsertDirective};
 use crate::graph::graph::Graph;
 use std::sync::Arc;
 
@@ -32,10 +32,6 @@ impl Database {
     (&mut self.graphs, &mut self.directives)
   }
 
-  pub fn directives_mut(&mut self) -> &mut DirectiveList {
-    &mut self.directives
-  }
-
   /// Load data stores from disk.
   fn load_graphs() -> Graphs {
     HashMap::from_iter(IntoIter::new([(
@@ -46,6 +42,14 @@ impl Database {
 
   /// Returns a vec of all registered directives.
   fn register_directives() -> DirectiveList {
-    vec![Arc::new(InsertDirective)]
+    let mut map: DirectiveList = HashMap::new();
+
+    let insert = InsertDirective;
+    map.insert(insert.key().to_string(), Arc::new(insert));
+
+    let delete = DeleteDirective;
+    map.insert(delete.key().to_string(), Arc::new(delete));
+
+    map
   }
 }

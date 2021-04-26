@@ -5,11 +5,12 @@ use serde_json::{json, Value};
 use crate::aql::context::AqlContext;
 use crate::graph::graph::SerializationError;
 use crate::lib::bson::{values_to_objects, JsonObject};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 pub type DirectiveResult<'a> = Result<JsonObject, DirectiveErrorType<'a>>;
 
-pub type DirectiveList = Vec<Arc<dyn Directive>>;
+pub type DirectiveList = HashMap<String, Arc<dyn Directive>>;
 
 /// JSON key prefix that all directives have.
 pub const DIRECTIVE_PREFIX: &str = "$";
@@ -81,9 +82,9 @@ pub fn extract_directive_data<'a>(
   directive: &dyn Directive,
   data: &'a JsonObject,
 ) -> DirectiveDataExtraction<'a> {
-  let key = format!("{}{}", DIRECTIVE_PREFIX, directive.key());
+  let key = directive.key();
 
-  let data = data.get(key.as_str()).unwrap();
+  let data = data.get(key).unwrap();
 
   return match data {
     Value::Array(v) => DirectiveDataExtraction::Array(values_to_objects(v)),

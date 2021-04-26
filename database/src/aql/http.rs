@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::sync::Mutex;
 
 use rocket::config::{Environment, LoggingLevel};
@@ -69,13 +68,11 @@ fn dispatch_query(
   let mut directive_results: Vec<Value> = Vec::new();
 
   for k in data.keys() {
-    let index = directives.binary_search_by(|d| format!("{}{}", DIRECTIVE_PREFIX, d.key()).cmp(k));
-    let index = match index {
-      Ok(v) => v,
-      Err(_) => continue,
+    let directive = directives.get(k);
+    let directive = match directive {
+      Some(v) => v,
+      None => continue,
     };
-
-    let directive = &directives[index];
 
     let res = directive.exec(&mut ctx);
     let mut res = match res {
@@ -92,8 +89,8 @@ fn dispatch_query(
       "directive".to_string(),
       Value::String(directive.key().to_string()),
     );
-    final_result.append(&mut res);
 
+    final_result.append(&mut res);
     directive_results.push(Value::Object(final_result));
   }
 

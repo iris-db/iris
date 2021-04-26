@@ -18,7 +18,7 @@ impl Directive for InsertDirective {
     let data = extract_directive_data(self, ctx.data);
     let data = match data {
       DirectiveDataExtraction::Array(v) => v,
-      _ => return Err(DirectiveErrorType::InvalidType("Object")),
+      _ => return Err(DirectiveErrorType::InvalidType("array")),
     };
 
     let mut nodes = Vec::new();
@@ -41,5 +41,30 @@ impl Directive for InsertDirective {
     };
 
     Ok(res.0.into())
+  }
+}
+
+/// Deletes a node from a graph.
+pub struct DeleteDirective;
+
+impl Directive for DeleteDirective {
+  fn key(&self) -> &str {
+    "delete"
+  }
+
+  fn exec(&self, ctx: &mut AqlContext) -> DirectiveResult {
+    let graph = &mut ctx.graph;
+
+    let data = extract_directive_data(self, ctx.data);
+    let data = match data {
+      DirectiveDataExtraction::Array(v) => v,
+      _ => return Err(DirectiveErrorType::InvalidType("array")),
+    };
+
+    let t = &data[0];
+
+    let res = graph.delete_node_by_id(t.get("id").unwrap().as_u64().unwrap());
+
+    Ok(res.into())
   }
 }
