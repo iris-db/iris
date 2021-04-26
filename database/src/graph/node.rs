@@ -13,7 +13,7 @@ pub struct Node {
 pub struct CreateNodeData(pub Option<String>, pub Option<Vec<Edge>>);
 
 /// The primary unique identifier of a node.
-pub type NodeId = u128;
+pub type NodeId = u64;
 
 impl Node {
   pub fn new(id: NodeId, bson: String, edges: Vec<Edge>) -> Node {

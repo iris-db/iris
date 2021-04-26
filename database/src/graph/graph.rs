@@ -35,7 +35,7 @@ pub struct Graph {
 #[derive(Serialize, Deserialize)]
 pub struct CrudOperationResult {
   pub count: u32,
-  pub time: u128,
+  pub time: u32,
 }
 
 impl Into<JsonObject> for CrudOperationResult {
@@ -146,7 +146,7 @@ impl Graph {
     Ok((
       CrudOperationResult {
         count,
-        time: now.elapsed().as_millis(),
+        time: now.elapsed().as_millis() as u32,
       },
       ids,
     ))
@@ -162,7 +162,7 @@ impl Graph {
       Err(_) => {
         return CrudOperationResult {
           count,
-          time: now.elapsed().as_millis(),
+          time: now.elapsed().as_millis() as u32,
         };
       }
     };
@@ -172,7 +172,7 @@ impl Graph {
 
     CrudOperationResult {
       count,
-      time: now.elapsed().as_millis(),
+      time: now.elapsed().as_millis() as u32,
     }
   }
 
@@ -204,7 +204,7 @@ impl Graph {
 
     CrudOperationResult {
       count,
-      time: now.elapsed().as_millis(),
+      time: now.elapsed().as_millis() as u32,
     }
   }
 }
@@ -220,7 +220,7 @@ impl Graph {
     let path = self.current_data_path();
 
     let mut open_opts = OpenOptions::new();
-    let file_opts = open_opts.write(true).create(true);
+    let file_opts = open_opts.write(true).append(true).create(true);
 
     let file = file_opts.open(path.clone());
     let mut file = match file {

@@ -38,7 +38,10 @@ impl Database {
 
   /// Load data stores from disk.
   fn load_graphs() -> Graphs {
-    HashMap::from_iter(IntoIter::new([("".to_string(), Graph::new(""))]))
+    HashMap::from_iter(IntoIter::new([(
+      "default".to_string(),
+      Graph::new("default"),
+    )]))
   }
 
   /// Returns a vec of all registered directives.

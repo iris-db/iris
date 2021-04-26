@@ -4,7 +4,7 @@ use std::sync::Mutex;
 use rocket::config::{Environment, LoggingLevel};
 use rocket::{Config, State};
 use rocket_contrib::json::Json;
-use serde_json::json;
+use serde_json::{json, Value};
 
 use crate::aql::context::AqlContext;
 use crate::aql::directive::{DirectiveError, DIRECTIVE_PREFIX};
@@ -21,7 +21,13 @@ struct RouteContext {
 pub fn start_rest_server() {
   let db = Database::new();
 
-  println!("Started rest server");
+  println!(
+    "\
+CallistoDB
+======================================
+PORT: 6000
+ClusterConnections: 1"
+  );
 
   let config = Config::build(Environment::Staging)
     .port(6000)
@@ -40,7 +46,7 @@ fn dispatch_query(
   graph_name: String,
   body: Json<JsonObject>,
   ctx: State<RouteContext>,
-) -> Json<JsonObject> {
+) -> Json<Vec<Value>> {
   let mut db = ctx.db.lock().unwrap();
 
   let (graphs, directives) = db.ctx_data();
@@ -50,18 +56,17 @@ fn dispatch_query(
   let graph = match graph {
     Some(v) => v,
     None => {
-      return Json(
-        json!({ "error": format!("Graph {} does not exist", graph_name) })
-          .as_object()
-          .unwrap()
-          .clone(),
-      );
+      return Json(vec![json!({
+        "error": format!("Graph {} does not exist", graph_name)
+      })]);
     }
   };
 
   let data = body.0;
 
   let mut ctx = AqlContext::new(graph, &data);
+
+  let mut directive_results: Vec<Value> = Vec::new();
 
   for k in data.keys() {
     let index = directives.binary_search_by(|d| format!("{}{}", DIRECTIVE_PREFIX, d.key()).cmp(k));
@@ -73,7 +78,7 @@ fn dispatch_query(
     let directive = &directives[index];
 
     let res = directive.exec(&mut ctx);
-    let _res = match res {
+    let mut res = match res {
       Ok(v) => v,
       Err(v) => DirectiveError {
         directive_key: k,
@@ -81,12 +86,16 @@ fn dispatch_query(
       }
       .into(),
     };
+
+    let mut final_result: JsonObject = JsonObject::new();
+    final_result.insert(
+      "directive".to_string(),
+      Value::String(directive.key().to_string()),
+    );
+    final_result.append(&mut res);
+
+    directive_results.push(Value::Object(final_result));
   }
 
-  Json(
-    json!({ "completedOnGraph": graph_name })
-      .as_object()
-      .unwrap()
-      .clone(),
-  )
+  Json(directive_results)
 }

@@ -104,21 +104,19 @@ mod tests {
       _ => panic!("Expected an object"),
     };
 
-    assert!(
-      data[0].eq(
-        Json::from(json!({
-            "$ref": "c",
-            "data": {
-              "age": 32,
-              "height": "50cm",
-              "settings": {
-                "theme": "dark"
-              }
+    assert!(data[0].eq(
+      Json::from(json!({
+          "$ref": "c",
+          "data": {
+            "age": 32,
+            "height": "50cm",
+            "settings": {
+              "theme": "dark"
             }
-        }))
-        .to_object_ref()
-      )
-    );
+          }
+      }))
+      .to_object_ref()
+    ));
   }
 
   #[test]
@@ -159,44 +157,38 @@ mod tests {
     let ctx = AqlContext::new(g, json.to_object_ref());
     let refs = ctx.refs;
 
-    assert!(
-      refs.get("a").unwrap().eq(
-        Json::from(json!({
-          "$ref": "a",
-          "a": "b"
-        }))
-        .to_object_ref()
-      )
-    );
+    assert!(refs.get("a").unwrap().eq(
+      Json::from(json!({
+        "$ref": "a",
+        "a": "b"
+      }))
+      .to_object_ref()
+    ));
 
-    assert!(
-      refs.get("b").unwrap().eq(
-        Json::from(json!({
-          "$ref": "b",
-          "username": "Steve",
-          "name": {
-            "first": "John",
-            "last": "Smith"
-          }
-        }))
-        .to_object_ref()
-      )
-    );
+    assert!(refs.get("b").unwrap().eq(
+      Json::from(json!({
+        "$ref": "b",
+        "username": "Steve",
+        "name": {
+          "first": "John",
+          "last": "Smith"
+        }
+      }))
+      .to_object_ref()
+    ));
 
-    assert!(
-      refs.get("c").unwrap().eq(
-        Json::from(json!({
-          "$ref": "c",
-          "data": {
-            "age": 32,
-            "height": "50cm",
-            "settings": {
-              "theme": "dark"
-            }
+    assert!(refs.get("c").unwrap().eq(
+      Json::from(json!({
+        "$ref": "c",
+        "data": {
+          "age": 32,
+          "height": "50cm",
+          "settings": {
+            "theme": "dark"
           }
-        }))
-        .to_object_ref()
-      )
-    );
+        }
+      }))
+      .to_object_ref()
+    ));
   }
 }
