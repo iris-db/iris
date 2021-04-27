@@ -1,14 +1,13 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use serde_json::{json, Value};
 
-use crate::aql::context::AqlContext;
+use crate::aql::context::HttpContext;
 use crate::graph::graph::SerializationError;
-use crate::lib::bson::{values_to_objects, JsonObject};
+use crate::lib::bson::JsonObject;
 
-pub type DirectiveResult<'a> = Result<JsonObject, DirectiveErrorType<'a>>;
+pub type DirectiveResult = Result<JsonObject, DirectiveErrorType>;
 
 pub type DirectiveList = HashMap<String, &'static dyn Directive>;
 
@@ -17,7 +16,56 @@ pub trait Directive: Sync + Send {
   /// The key name. Not the actual formatted JSON key.
   fn key(&self) -> &str;
   /// Execute the directive's action.
-  fn exec(&self, ctx: &mut AqlContext) -> DirectiveResult;
+  fn exec(&self, ctx: HttpContext) -> DirectiveResult;
+}
+
+pub struct DirectiveData<'a>(&'a JsonObject);
+
+impl DirectiveData<'_> {
+  pub fn new(data: &JsonObject) -> DirectiveData {
+    DirectiveData { 0: data }
+  }
+
+  pub fn data(&self) -> &JsonObject {
+    self.0
+  }
+
+  /// Attempts to retrieve an optional key from an object.
+  pub fn get_optional(&self, key: &str) -> Option<&Value> {
+    self.0.get(key)
+  }
+
+  pub fn get_required(&self, key: &str) -> Result<&Value, DirectiveErrorType> {
+    let data = self.0.get(key);
+    return match data {
+      Some(v) => Ok(v),
+      None => Err(DirectiveErrorType::MissingKey(key.to_string())),
+    };
+  }
+}
+
+/// Wrapper to execute an action on each directive object in the directive array.
+pub struct DirectiveDataSet(Vec<JsonObject>);
+
+impl DirectiveDataSet {
+  pub fn new(data: Vec<JsonObject>) -> DirectiveDataSet {
+    DirectiveDataSet { 0: data }
+  }
+
+  /// Dispatches the directive on each object in the directive array.
+  pub fn dispatch<T>(
+    &self,
+    action: fn(&DirectiveData) -> Result<T, DirectiveErrorType>,
+  ) -> Result<Vec<T>, DirectiveErrorType> {
+    let mut acc: Vec<T> = Vec::new();
+
+    for o in &self.0 {
+      let data = &DirectiveData::new(o);
+      acc.push(action(data)?);
+    }
+
+    Ok(acc)
+  }
 }
 
 /// The result of data extraction from the POST body for the directive.
@@ -33,17 +81,19 @@ pub enum DirectiveDataExtraction<'a> {
 /// Error while executing a directive.
 pub struct DirectiveError<'a> {
   pub directive_key: &'a str,
-  pub err_type: DirectiveErrorType<'a>,
+  pub err_type: DirectiveErrorType,
 }
 
 // Type of directive error.
-pub enum DirectiveErrorType<'a> {
+pub enum DirectiveErrorType {
   /// A required JSON key is missing.
-  MissingKey(&'a str),
-  /// Wrong JSON type for the directive value.
-  InvalidType(&'a str),
+  MissingKey(String),
   /// Serialization error while executing the directive.
   Serialization(SerializationError),
+  /// Expected an array for the directive value.
+  ExpectedArray,
+  /// Expected an object for the directive value.
+  ExpectedObject,
 }
 
 impl Into<JsonObject> for DirectiveError<'_> {
@@ -52,7 +102,8 @@ impl Into<JsonObject> for DirectiveError<'_> {
 
     let data: Value = match err_type {
       DirectiveErrorType::MissingKey(v) => json!({ "key": v }),
-      DirectiveErrorType::InvalidType(v) => json!({ "type": v }),
+      DirectiveErrorType::ExpectedArray => json!({ "type": "array" }),
+      DirectiveErrorType::ExpectedObject => json!({ "type": "object" }),
       DirectiveErrorType::Serialization(v) => Value::Object(v.into()),
     };
 
@@ -69,38 +120,11 @@ impl Into<JsonObject> for DirectiveError<'_> {
 fn get_err_message(t: &DirectiveErrorType) -> Value {
   return match t {
     DirectiveErrorType::MissingKey(v) => format!("Missing key: {}", v).into(),
-    DirectiveErrorType::InvalidType(v) => format!("Invalid type: {}", v).into(),
+    DirectiveErrorType::ExpectedArray => format!("Invalid type: array").into(),
+    DirectiveErrorType::ExpectedObject => format!("Invalid type: object").into(),
     DirectiveErrorType::Serialization(_) => "Serialization error".to_string().into(),
   };
 }
-
-/// Extracts directive data by looking up the directive JSON key's value on the request body.
-pub fn extract_directive_data<'a>(
-  directive: &dyn Directive,
-  data: &'a JsonObject,
-) -> DirectiveDataExtraction<'a> {
-  let key = directive.key();
-
-  let data = data.get(key).unwrap();
-
-  return match data {
-    Value::Array(v) => DirectiveDataExtraction::Array(values_to_objects(v)),
-    Value::Object(v) => DirectiveDataExtraction::Object(v.clone()),
-    v => DirectiveDataExtraction::Other(v),
-  };
-}
-
-/// Attempts to retrieve the wanted JSON data type returning an error if its not the expected type.
-pub fn match_directive_data() {}
-
-// impl dyn Directive {
-//   pub fn error(&self, err_type: DirectiveErrorType) -> DirectiveResult {
-//     Err(DirectiveError {
-//       directive_key: self.key(),
-//       err_type,
-//     })
-//   }
-// }
 
 impl Ord for dyn Directive {
   fn cmp(&self, other: &Self) -> Ordering {

@@ -6,7 +6,7 @@ use rocket::{Config, State};
 use rocket_contrib::json::Json;
 use serde_json::{json, Value};
 
-use crate::aql::context::AqlContext;
+use crate::aql::context::HttpContext;
 use crate::aql::directive::DirectiveError;
 use crate::graph::database::Database;
 use crate::graph::graph::Graph;
@@ -62,8 +62,6 @@ fn dispatch_query(
 
   let data = body.0;
 
-  let mut ctx = AqlContext::new(graph.borrow_mut(), &data);
-
   for k in data.keys() {
     let directive = directives.get(k);
     let directive = match directive {
@@ -71,7 +69,9 @@ fn dispatch_query(
       None => continue,
     };
 
-    let res = directive.exec(&mut ctx);
+    let ctx = HttpContext::try_new(graph, *directive, &data).ok().unwrap();
+
+    let res = directive.exec(ctx);
     let mut res = match res {
       Ok(v) => v,
       Err(v) => DirectiveError {

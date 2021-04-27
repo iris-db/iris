@@ -1,31 +1,68 @@
 use std::collections::HashMap;
 
-use crate::graph::graph::Graph;
-use crate::lib::bson::JsonObject;
+use serde_json::Value;
 
-/// The JSON key that denotes a reference.
+use crate::aql::directive::{
+  Directive, DirectiveDataExtraction, DirectiveDataSet, DirectiveErrorType,
+};
+use crate::graph::graph::Graph;
+use crate::lib::bson::{values_to_objects, JsonObject};
+
+/// The JSON key that denotes a reference to an object.
 const REF_KEY: &str = "$ref";
 
 /// Holds the refs and other metadata about the request.
-pub struct AqlContext<'a> {
-  /// Current node graph.
+pub struct HttpContext<'a> {
   pub graph: &'a mut Graph,
-  /// JSON object that contains the directive data. It is an array.
-  pub data: &'a JsonObject,
-  /// JSON object references in the request body.
+  pub data: DirectiveDataSet,
   pub refs: HashMap<String, JsonObject>,
 }
 
-impl AqlContext<'_> {
-  pub fn new<'a>(graph: &'a mut Graph, body: &'a JsonObject) -> AqlContext<'a> {
-    AqlContext {
+impl HttpContext<'_> {
+  pub fn try_new<'a>(
+    graph: &'a mut Box<Graph>,
+    directive: &'static dyn Directive,
+    body: &JsonObject,
+  ) -> Result<HttpContext<'a>, DirectiveErrorType> {
+    let data = HttpContext::retrieve_data(directive, body)?;
+
+    Ok(HttpContext {
       graph,
-      data: body,
-      refs: AqlContext::traverse_refs(body),
-    }
+      data,
+      refs: HttpContext::traverse_refs(body),
+    })
   }
 
-  /// Traverses each JSON object for a reference.
+  fn retrieve_data(
+    directive: &'static dyn Directive,
+    body: &JsonObject,
+  ) -> Result<DirectiveDataSet, DirectiveErrorType> {
+    let data = HttpContext::extract_directive_data(directive, body);
+    let data = match data {
+      DirectiveDataExtraction::Array(v) => v,
+      _ => return Err(DirectiveErrorType::ExpectedArray),
+    };
+
+    Ok(DirectiveDataSet::new(data))
+  }
+
+  /// Extracts directive data by looking up the directive JSON key's value on the request body.
+  fn extract_directive_data<'a>(
+    directive: &'static dyn Directive,
+    data: &'a JsonObject,
+  ) -> DirectiveDataExtraction<'a> {
+    let key = directive.key();
+
+    let data = data.get(key).unwrap();
+
+    return match data {
+      Value::Array(v) => DirectiveDataExtraction::Array(values_to_objects(v)),
+      Value::Object(v) => DirectiveDataExtraction::Object(v.clone()),
+      v => DirectiveDataExtraction::Other(v),
+    };
+  }
+
+  /// Traverses each JSON object for a ref key.
   fn traverse_refs(json: &JsonObject) -> HashMap<String, JsonObject> {
     fn traverse_object(tree: &mut HashMap<String, JsonObject>, ch: &JsonObject) {
       for (k, v) in ch {
@@ -58,15 +95,15 @@ impl AqlContext<'_> {
 mod tests {
   use serde_json::json;
 
-  use crate::aql::directive::{
-    extract_directive_data, Directive, DirectiveDataExtraction, DirectiveResult,
-  };
+  use crate::aql::directive::{Directive, DirectiveResult};
   use crate::lib::bson::Json;
 
   use super::*;
 
   #[test]
   fn test_extract_directive_data() {
+    let g = &mut Graph::new("TEST");
+
     let json = Json::from(json!(
       {
         "insert": [
@@ -84,41 +121,46 @@ mod tests {
       }
     ));
 
-    struct TestDirective {}
+    struct TestDirective;
 
     impl Directive for TestDirective {
       fn key(&self) -> &str {
         "insert"
       }
 
-      fn exec(&self, _ctx: &mut AqlContext) -> DirectiveResult {
+      fn exec(&self, ctx: HttpContext) -> DirectiveResult {
         todo!()
       }
     }
 
-    let directive = &TestDirective {};
-    let data = extract_directive_data(directive, json.to_object_ref());
+    let ctx = HttpContext::try_new(g, &TestDirective, json.to_object_ref())
+      .ok()
+      .expect("Could not create HttpContext");
 
-    let data = match data {
-      DirectiveDataExtraction::Array(v) => v,
-      _ => panic!("Expected an object"),
-    };
+    let data = ctx.data;
 
-    assert!(
-      data[0].eq(
-        Json::from(json!({
-            "$ref": "c",
-            "data": {
-              "age": 32,
-              "height": "50cm",
-              "settings": {
-                "theme": "dark"
+    data
+      .dispatch::<()>(|o| {
+        assert!(
+          o.data().eq(
+            Json::from(json!({
+              "$ref": "c",
+              "data": {
+                "age": 32,
+                "height": "50cm",
+                "settings": {
+                  "theme": "dark"
+                }
               }
-            }
-        }))
-        .to_object_ref()
-      )
-    );
+            }))
+            .to_object_ref()
+          )
+        );
+
+        Ok(())
+      })
+      .ok()
+      .expect("Could not dispatch actions");
   }
 
   #[test]
@@ -127,7 +169,7 @@ mod tests {
 
     let json = Json::from(json!(
       {
-        "$get": [
+        "get": [
           {
             "$ref": "a",
             "a": "b"
@@ -141,7 +183,7 @@ mod tests {
             }
           },
         ],
-        "$insert": [
+        "insert": [
           {
             "$ref": "c",
             "data": {
@@ -156,7 +198,21 @@ mod tests {
       }
     ));
 
-    let ctx = AqlContext::new(g, json.to_object_ref());
+    struct TestDirective;
+
+    impl Directive for TestDirective {
+      fn key(&self) -> &str {
+        "insert"
+      }
+
+      fn exec(&self, _ctx: HttpContext) -> DirectiveResult {
+        todo!()
+      }
+    }
+
+    let ctx = HttpContext::try_new(g, &TestDirective, json.to_object_ref())
+      .ok()
+      .expect("Could not create HttpContext");
     let refs = ctx.refs;
 
     assert!(
