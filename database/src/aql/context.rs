@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-use crate::aql::directive::{Directive, DirectiveDataSet, DirectiveError};
+use crate::aql::directive::{
+  Directive, DirectiveDataExtraction, DirectiveDataSet, DirectiveErrorType,
+};
 use crate::graph::graph::Graph;
 use crate::lib::bson::{values_to_objects, JsonObject};
 
@@ -21,8 +23,8 @@ impl HttpContext<'_> {
     graph: &'a mut Box<Graph>,
     directive: &'static dyn Directive,
     body: &JsonObject,
-  ) -> Result<HttpContext<'a>, DirectiveError> {
-    let data = HttpContext::lookup_directive_data(directive, body)?;
+  ) -> Result<HttpContext<'a>, DirectiveErrorType> {
+    let data = HttpContext::retrieve_data(directive, body)?;
 
     Ok(HttpContext {
       graph,
@@ -31,19 +33,33 @@ impl HttpContext<'_> {
     })
   }
 
-  /// Extracts directive data by looking up the directive JSON key's value on a JSON object.
-  fn lookup_directive_data(
+  fn retrieve_data(
     directive: &'static dyn Directive,
     body: &JsonObject,
-  ) -> Result<DirectiveDataSet, DirectiveError> {
-    let data = body.get(directive.key()).unwrap();
-
+  ) -> Result<DirectiveDataSet, DirectiveErrorType> {
+    let data = HttpContext::extract_directive_data(directive, body);
     let data = match data {
-      Value::Array(v) => v,
-      _ => return Err(DirectiveError::ExpectedArray),
+      DirectiveDataExtraction::Array(v) => v,
+      _ => return Err(DirectiveErrorType::ExpectedArray),
     };
 
-    Ok(DirectiveDataSet::new(values_to_objects(data)))
+    Ok(DirectiveDataSet::new(data))
+  }
+
+  /// Extracts directive data by looking up the directive JSON key's value on the request body.
+  fn extract_directive_data<'a>(
+    directive: &'static dyn Directive,
+    data: &'a JsonObject,
+  ) -> DirectiveDataExtraction<'a> {
+    let key = directive.key();
+
+    let data = data.get(key).unwrap();
+
+    return match data {
+      Value::Array(v) => DirectiveDataExtraction::Array(values_to_objects(v)),
+      Value::Object(v) => DirectiveDataExtraction::Object(v.clone()),
+      v => DirectiveDataExtraction::Other(v),
+    };
   }
 
   /// Traverses each JSON object for a ref key.
@@ -112,7 +128,7 @@ mod tests {
         "insert"
       }
 
-      fn exec(&self, _ctx: HttpContext) -> DirectiveResult {
+      fn exec(&self, ctx: HttpContext) -> DirectiveResult {
         todo!()
       }
     }

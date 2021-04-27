@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use serde_json::{json, Value};
@@ -6,7 +7,8 @@ use crate::aql::context::HttpContext;
 use crate::graph::graph::SerializationError;
 use crate::lib::bson::JsonObject;
 
-pub type DirectiveResult = Result<JsonObject, DirectiveError>;
+pub type DirectiveResult = Result<JsonObject, DirectiveErrorType>;
+
 pub type DirectiveList = HashMap<String, &'static dyn Directive>;
 
 /// A prefixed JSON key that executes a database query.
@@ -33,11 +35,11 @@ impl DirectiveData<'_> {
     self.0.get(key)
   }
 
-  pub fn get_required(&self, key: &str) -> Result<&Value, DirectiveError> {
+  pub fn get_required(&self, key: &str) -> Result<&Value, DirectiveErrorType> {
     let data = self.0.get(key);
     return match data {
       Some(v) => Ok(v),
-      None => Err(DirectiveError::MissingKey(key.to_string())),
+      None => Err(DirectiveErrorType::MissingKey(key.to_string())),
     };
   }
 }
@@ -53,8 +55,8 @@ impl DirectiveDataSet {
   /// Dispatches the directive on each object in the directive array.
   pub fn dispatch<T>(
     &self,
-    action: fn(&DirectiveData) -> Result<T, DirectiveError>,
-  ) -> Result<Vec<T>, DirectiveError> {
+    action: fn(&DirectiveData) -> Result<T, DirectiveErrorType>,
+  ) -> Result<Vec<T>, DirectiveErrorType> {
     let mut acc: Vec<T> = Vec::new();
 
     for o in &self.0 {
@@ -66,8 +68,24 @@ impl DirectiveDataSet {
   }
 }
 
-/// Type of directive error.
-pub enum DirectiveError {
+/// The result of data extraction from the POST body for the directive.
+pub enum DirectiveDataExtraction<'a> {
+  /// JSON object.
+  Object(JsonObject),
+  /// JSON array.
+  Array(Vec<JsonObject>),
+  /// Other JSON type, such as a number.
+  Other(&'a Value),
+}
+
+/// Error while executing a directive.
+pub struct DirectiveError<'a> {
+  pub directive_key: &'a str,
+  pub err_type: DirectiveErrorType,
+}
+
+// Type of directive error.
+pub enum DirectiveErrorType {
   /// A required JSON key is missing.
   MissingKey(String),
   /// Serialization error while executing the directive.
@@ -78,44 +96,52 @@ pub enum DirectiveError {
   ExpectedObject,
 }
 
-impl DirectiveError {
-  pub fn get_message(&self) -> String {
-    return match self {
-      DirectiveError::MissingKey(key) => format!("Missing required key: {}", key),
-      DirectiveError::Serialization(_) => "Node serialization error".into(),
-      DirectiveError::ExpectedArray => "Expected directive data to be an array".into(),
-      DirectiveError::ExpectedObject => "Expected directive data be an object".into(),
-    };
-  }
+impl Into<JsonObject> for DirectiveError<'_> {
+  fn into(self) -> JsonObject {
+    let err_type = &self.err_type;
 
-  /// Returns a JSON object containing the error details.
-  pub fn get_data(&self) -> Value {
-    return match self {
-      DirectiveError::MissingKey(key) => json!({ "key": key }),
-      DirectiveError::Serialization(v) => Value::Object(v.into()),
-      DirectiveError::ExpectedArray => json!({}),
-      DirectiveError::ExpectedObject => json!({}),
+    let data: Value = match err_type {
+      DirectiveErrorType::MissingKey(v) => json!({ "key": v }),
+      DirectiveErrorType::ExpectedArray => json!({ "type": "array" }),
+      DirectiveErrorType::ExpectedObject => json!({ "type": "object" }),
+      DirectiveErrorType::Serialization(v) => Value::Object(v.into()),
     };
+
+    let mut json = JsonObject::new();
+
+    json.insert("directive".to_string(), json!(self.directive_key));
+    json.insert("msg".to_string(), get_err_message(err_type));
+    json.insert("data".to_string(), data);
+
+    json
   }
 }
 
-/// Creates a new JSON object representing a directive error.
-pub fn new_error_object(directive_key: &str, err: DirectiveError) -> JsonObject {
-  let mut obj = JsonObject::new();
-
-  obj.insert(
-    "directive".to_string(),
-    Value::String(directive_key.to_string()),
-  );
-
-  let mut data = JsonObject::new();
-
-  match err.get_data() {
-    Value::Object(mut v) => data.append(&mut v),
-    _ => {}
+fn get_err_message(t: &DirectiveErrorType) -> Value {
+  return match t {
+    DirectiveErrorType::MissingKey(v) => format!("Missing key: {}", v).into(),
+    DirectiveErrorType::ExpectedArray => format!("Invalid type: array").into(),
+    DirectiveErrorType::ExpectedObject => format!("Invalid type: object").into(),
+    DirectiveErrorType::Serialization(_) => "Serialization error".to_string().into(),
   };
+}
 
-  obj.append(&mut data);
+impl Ord for dyn Directive {
+  fn cmp(&self, other: &Self) -> Ordering {
+    self.key().cmp(other.key())
+  }
+}
 
-  obj
+impl PartialOrd for dyn Directive {
+  fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+    self.key().partial_cmp(other.key())
+  }
+}
+
+impl Eq for dyn Directive {}
+
+impl PartialEq for dyn Directive {
+  fn eq(&self, other: &Self) -> bool {
+    self.key().eq(other.key())
+  }
 }
