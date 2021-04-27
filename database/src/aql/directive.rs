@@ -1,16 +1,16 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use serde_json::{json, Value};
 
 use crate::aql::context::AqlContext;
 use crate::graph::graph::SerializationError;
 use crate::lib::bson::{values_to_objects, JsonObject};
-use std::collections::HashMap;
-use std::sync::Arc;
 
 pub type DirectiveResult<'a> = Result<JsonObject, DirectiveErrorType<'a>>;
 
-pub type DirectiveList = HashMap<String, Arc<dyn Directive>>;
+pub type DirectiveList = HashMap<String, &'static dyn Directive>;
 
 /// A prefixed JSON key that executes a database query.
 pub trait Directive: Sync + Send {

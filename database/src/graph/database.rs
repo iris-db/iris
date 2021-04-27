@@ -5,7 +5,6 @@ use std::iter::FromIterator;
 use crate::aql::directive::{Directive, DirectiveList};
 use crate::aql::directives::{DeleteDirective, InsertDirective, ReadDirective};
 use crate::graph::graph::Graph;
-use std::sync::Arc;
 
 pub type Graphs = HashMap<String, Box<Graph>>;
 
@@ -24,7 +23,10 @@ impl Database {
       soft_memory_limit: 0,
       hard_memory_limit: 0,
       graphs: Database::load_graphs(),
-      directives: Database::register_directives(),
+      directives: Database::register_directives()
+        .into_iter()
+        .map(|d| (d.key().to_string(), d))
+        .collect(),
     }
   }
 
@@ -49,18 +51,7 @@ impl Database {
   }
 
   /// Returns a vec of all registered directives.
-  fn register_directives() -> DirectiveList {
-    let mut map: DirectiveList = HashMap::new();
-
-    let insert = InsertDirective;
-    map.insert(insert.key().to_string(), Arc::new(insert));
-
-    let delete = DeleteDirective;
-    map.insert(delete.key().to_string(), Arc::new(delete));
-
-    let get = ReadDirective;
-    map.insert(get.key().to_string(), Arc::new(get));
-
-    map
+  fn register_directives() -> Vec<&'static dyn Directive> {
+    vec![&InsertDirective, &DeleteDirective, &ReadDirective]
   }
 }
