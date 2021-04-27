@@ -14,6 +14,7 @@ use crate::lib::bson::{encode, Json, JsonObject};
 use crate::lib::filesystem::DATA_PATH;
 use crate::lib::uid::IntCursor;
 
+/// Default configuration.
 const MAX_NODE_SIZE: usize = 8000;
 const MAX_PAGE_SIZE: u64 = 16000;
 
@@ -33,12 +34,12 @@ pub struct Graph {
 
 /// Result of a crud operation.
 #[derive(Serialize, Deserialize)]
-pub struct CrudOperationResult {
+pub struct CrudOperationMetadata {
   pub count: u32,
   pub time: u32,
 }
 
-impl Into<JsonObject> for CrudOperationResult {
+impl Into<JsonObject> for CrudOperationMetadata {
   fn into(self) -> JsonObject {
     serde_json::to_value(self)
       .unwrap()
@@ -70,7 +71,6 @@ impl Into<JsonObject> for &SerializationError {
           }
         })).to_object()
       }
-
       SerializationError::NodeSizeExceeded(id) => Json::from(json!({
         "error": {
           "msg": format!("[Node Id: {}] Exceeded the maximum node size of {} bytes", id, MAX_NODE_SIZE),
@@ -113,7 +113,7 @@ impl Graph {
   pub fn insert_nodes(
     &mut self,
     data: Option<Vec<CreateNodeData>>,
-  ) -> Result<(CrudOperationResult, Vec<NodeId>), SerializationError> {
+  ) -> Result<(CrudOperationMetadata, Vec<NodeId>), SerializationError> {
     let now = Instant::now();
 
     let data = data.unwrap_or(Vec::new());
@@ -144,7 +144,7 @@ impl Graph {
     }
 
     Ok((
-      CrudOperationResult {
+      CrudOperationMetadata {
         count,
         time: now.elapsed().as_millis() as u32,
       },
@@ -152,7 +152,7 @@ impl Graph {
     ))
   }
 
-  pub fn delete_node_by_id(&mut self, id: NodeId) -> CrudOperationResult {
+  pub fn delete_node_by_id(&mut self, id: NodeId) -> CrudOperationMetadata {
     let now = Instant::now();
     let mut count = 0;
 
@@ -160,7 +160,7 @@ impl Graph {
     let pos = match pos {
       Ok(pos) => pos,
       Err(_) => {
-        return CrudOperationResult {
+        return CrudOperationMetadata {
           count,
           time: now.elapsed().as_millis() as u32,
         };
@@ -170,7 +170,7 @@ impl Graph {
     self.nodes.remove(pos);
     count += 1;
 
-    CrudOperationResult {
+    CrudOperationMetadata {
       count,
       time: now.elapsed().as_millis() as u32,
     }
@@ -181,7 +181,7 @@ impl Graph {
     &mut self,
     predicate: fn(&Node) -> bool,
     limit: Option<u32>,
-  ) -> CrudOperationResult {
+  ) -> CrudOperationMetadata {
     let mut count = 0;
     let nodes = &mut self.nodes;
 
@@ -202,10 +202,35 @@ impl Graph {
       }
     }
 
-    CrudOperationResult {
+    CrudOperationMetadata {
       count,
       time: now.elapsed().as_millis() as u32,
     }
+  }
+
+  /// Gets nodes by a condition.
+  pub fn get_nodes_where<P: FnOnce(&Node) -> bool + Copy>(
+    &mut self,
+    predicate: P,
+    limit: Option<u32>,
+  ) -> Vec<&Box<Node>> {
+    let mut acc: Vec<&Box<Node>> = Vec::new();
+
+    let mut count: u32 = 0;
+    let limit = limit.unwrap_or(u32::MAX);
+
+    for node in &self.nodes {
+      if predicate(&node) {
+        count += 1;
+        acc.push(&node);
+      }
+
+      if count == limit {
+        break;
+      }
+    }
+
+    acc
   }
 }
 

@@ -1,8 +1,11 @@
+use serde_json::Value;
+
 use crate::aql::context::AqlContext;
 use crate::aql::directive::{
   extract_directive_data, Directive, DirectiveDataExtraction, DirectiveErrorType, DirectiveResult,
 };
 use crate::graph::node::CreateNodeData;
+use crate::lib::bson::JsonObject;
 
 /// Insert a node into a graph.
 pub struct InsertDirective;
@@ -66,5 +69,44 @@ impl Directive for DeleteDirective {
     let res = graph.delete_node_by_id(t.get("id").unwrap().as_u64().unwrap());
 
     Ok(res.into())
+  }
+}
+
+/// Reads nodes from a graph.
+pub struct ReadDirective;
+
+impl Directive for ReadDirective {
+  fn key(&self) -> &str {
+    "get"
+  }
+
+  fn exec(&self, ctx: &mut AqlContext) -> DirectiveResult {
+    let graph = &mut ctx.graph;
+    let data = extract_directive_data(self, ctx.data);
+    let data = match data {
+      DirectiveDataExtraction::Array(v) => v,
+      _ => return Err(DirectiveErrorType::InvalidType("array")),
+    };
+
+    let mut acc = JsonObject::new();
+    let mut acc_data: Vec<Value> = Vec::new();
+
+    for o in data {
+      let res = graph.get_nodes_where(
+        |node| o.get("id").unwrap().as_u64().unwrap() == *node.id(),
+        None,
+      );
+
+      acc_data.push(Value::Array(
+        res
+          .iter()
+          .map(|n| serde_json::from_str(n.bson().as_str()).unwrap())
+          .collect(),
+      ));
+    }
+
+    acc.insert("data".to_string(), Value::Array(acc_data));
+
+    Ok(acc)
   }
 }

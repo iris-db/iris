@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 use crate::aql::directive::{Directive, DirectiveList};
-use crate::aql::directives::{DeleteDirective, InsertDirective};
+use crate::aql::directives::{DeleteDirective, InsertDirective, ReadDirective};
 use crate::graph::graph::Graph;
 use std::sync::Arc;
 
@@ -57,6 +57,9 @@ impl Database {
 
     let delete = DeleteDirective;
     map.insert(delete.key().to_string(), Arc::new(delete));
+
+    let get = ReadDirective;
+    map.insert(get.key().to_string(), Arc::new(get));
 
     map
   }

@@ -1,6 +1,4 @@
-#![feature(option_insert)]
 #![feature(map_first_last)]
-#![feature(box_syntax)]
 #![feature(test)]
 #![feature(proc_macro_hygiene, decl_macro)]
 
