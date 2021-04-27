@@ -69,7 +69,7 @@ mod tests {
   fn test_extract_directive_data() {
     let json = Json::from(json!(
       {
-        "$insert": [
+        "insert": [
           {
             "$ref": "c",
             "data": {

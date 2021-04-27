@@ -12,9 +12,6 @@ pub type DirectiveResult<'a> = Result<JsonObject, DirectiveErrorType<'a>>;
 
 pub type DirectiveList = HashMap<String, Arc<dyn Directive>>;
 
-/// JSON key prefix that all directives have.
-pub const DIRECTIVE_PREFIX: &str = "$";
-
 /// A prefixed JSON key that executes a database query.
 pub trait Directive: Sync + Send {
   /// The key name. Not the actual formatted JSON key.
