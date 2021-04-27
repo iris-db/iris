@@ -28,8 +28,16 @@ impl Database {
     }
   }
 
-  pub fn ctx_data(&mut self) -> (&mut Graphs, &mut DirectiveList) {
+  pub fn route_ctx(&mut self) -> (&mut Graphs, &mut DirectiveList) {
     (&mut self.graphs, &mut self.directives)
+  }
+
+  pub fn soft_memory_limit(&self) -> &usize {
+    &self.soft_memory_limit
+  }
+
+  pub fn hard_memory_limit(&self) -> &usize {
+    &self.hard_memory_limit
   }
 
   /// Load data stores from disk.

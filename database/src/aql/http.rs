@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::sync::Mutex;
 
 use rocket::config::{Environment, LoggingLevel};
@@ -6,15 +7,12 @@ use rocket_contrib::json::Json;
 use serde_json::{json, Value};
 
 use crate::aql::context::AqlContext;
-use crate::aql::directive::{DirectiveError, DIRECTIVE_PREFIX};
+use crate::aql::directive::DirectiveError;
 use crate::graph::database::Database;
 use crate::graph::graph::Graph;
 use crate::lib::bson::JsonObject;
 
-/// Rocket route context.
-struct RouteContext {
-  db: Mutex<Database>,
-}
+type RouteContext = Mutex<Database>;
 
 /// Starts the rest server.
 pub fn start_rest_server() {
@@ -36,7 +34,7 @@ ClusterConnections: 1"
 
   rocket::custom(config)
     .mount("/", routes![dispatch_query])
-    .manage(RouteContext { db: Mutex::new(db) })
+    .manage(Mutex::new(db))
     .launch();
 }
 
@@ -46,9 +44,10 @@ fn dispatch_query(
   body: Json<JsonObject>,
   ctx: State<RouteContext>,
 ) -> Json<Vec<Value>> {
-  let mut db = ctx.db.lock().unwrap();
+  let mut db = ctx.inner().lock().unwrap();
+  let (graphs, directives) = db.route_ctx();
 
-  let (graphs, directives) = db.ctx_data();
+  let mut directive_results: Vec<Value> = Vec::new();
 
   let graph: Option<&mut Box<Graph>> = graphs.get_mut(graph_name.as_str());
 
@@ -63,9 +62,7 @@ fn dispatch_query(
 
   let data = body.0;
 
-  let mut ctx = AqlContext::new(graph, &data);
-
-  let mut directive_results: Vec<Value> = Vec::new();
+  let mut ctx = AqlContext::new(graph.borrow_mut(), &data);
 
   for k in data.keys() {
     let directive = directives.get(k);

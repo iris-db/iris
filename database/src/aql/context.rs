@@ -7,17 +7,17 @@ use crate::lib::bson::JsonObject;
 const REF_KEY: &str = "$ref";
 
 /// Holds the refs and other metadata about the request.
-pub struct AqlContext<'a, 'b> {
+pub struct AqlContext<'a> {
   /// Current node graph.
-  pub graph: &'a mut Box<Graph>,
+  pub graph: &'a mut Graph,
   /// JSON object that contains the directive data. It is an array.
-  pub data: &'b JsonObject,
+  pub data: &'a JsonObject,
   /// JSON object references in the request body.
   pub refs: HashMap<String, JsonObject>,
 }
 
-impl AqlContext<'_, '_> {
-  pub fn new<'a, 'b>(graph: &'a mut Box<Graph>, body: &'b JsonObject) -> AqlContext<'a, 'b> {
+impl AqlContext<'_> {
+  pub fn new<'a>(graph: &'a mut Graph, body: &'a JsonObject) -> AqlContext<'a> {
     AqlContext {
       graph,
       data: body,
@@ -104,19 +104,21 @@ mod tests {
       _ => panic!("Expected an object"),
     };
 
-    assert!(data[0].eq(
-      Json::from(json!({
-          "$ref": "c",
-          "data": {
-            "age": 32,
-            "height": "50cm",
-            "settings": {
-              "theme": "dark"
+    assert!(
+      data[0].eq(
+        Json::from(json!({
+            "$ref": "c",
+            "data": {
+              "age": 32,
+              "height": "50cm",
+              "settings": {
+                "theme": "dark"
+              }
             }
-          }
-      }))
-      .to_object_ref()
-    ));
+        }))
+        .to_object_ref()
+      )
+    );
   }
 
   #[test]
@@ -157,38 +159,44 @@ mod tests {
     let ctx = AqlContext::new(g, json.to_object_ref());
     let refs = ctx.refs;
 
-    assert!(refs.get("a").unwrap().eq(
-      Json::from(json!({
-        "$ref": "a",
-        "a": "b"
-      }))
-      .to_object_ref()
-    ));
+    assert!(
+      refs.get("a").unwrap().eq(
+        Json::from(json!({
+          "$ref": "a",
+          "a": "b"
+        }))
+        .to_object_ref()
+      )
+    );
 
-    assert!(refs.get("b").unwrap().eq(
-      Json::from(json!({
-        "$ref": "b",
-        "username": "Steve",
-        "name": {
-          "first": "John",
-          "last": "Smith"
-        }
-      }))
-      .to_object_ref()
-    ));
-
-    assert!(refs.get("c").unwrap().eq(
-      Json::from(json!({
-        "$ref": "c",
-        "data": {
-          "age": 32,
-          "height": "50cm",
-          "settings": {
-            "theme": "dark"
+    assert!(
+      refs.get("b").unwrap().eq(
+        Json::from(json!({
+          "$ref": "b",
+          "username": "Steve",
+          "name": {
+            "first": "John",
+            "last": "Smith"
           }
-        }
-      }))
-      .to_object_ref()
-    ));
+        }))
+        .to_object_ref()
+      )
+    );
+
+    assert!(
+      refs.get("c").unwrap().eq(
+        Json::from(json!({
+          "$ref": "c",
+          "data": {
+            "age": 32,
+            "height": "50cm",
+            "settings": {
+              "theme": "dark"
+            }
+          }
+        }))
+        .to_object_ref()
+      )
+    );
   }
 }
