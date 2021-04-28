@@ -1,8 +1,7 @@
-CallistoDB README
+Iris README
 
 The distributed graph database for modern data.
 
 COMPONENTS
 
-  callisto-ctl - Cloud deployment manager.
-  callisto - Database process.
+  iris - Database process.

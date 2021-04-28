@@ -2,7 +2,6 @@
 
 # Executes tests by category
 
-
 DOCKERFILE_PATH=.
 E2E_TEST_ENTRY_PATH=e2e/run_tests.py
 
@@ -10,7 +9,7 @@ E2E_TEST_ENTRY_PATH=e2e/run_tests.py
 
 function help_msg {
 	echo "\
-CallistoDB Test Script
+Iris Test Script
 e2e | Executes all e2e tests
 db  | Executes all database related tests in the database directory"
 }
@@ -38,7 +37,7 @@ function test_e2e {
 	check_cmd_exists docker
 	check_cmd_exists python3
 
-	TAG=callistodb/test-e2e
+	TAG=iris/test-e2e
 
 	docker build $DOCKERFILE_PATH -t $TAG
 	docker run $TAG

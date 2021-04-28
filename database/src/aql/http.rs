@@ -21,7 +21,7 @@ pub fn start_rest_server() {
 
   println!(
     "\
-CallistoDB
+Iris
 ======================================
 PORT: 6000
 ClusterConnections: 1"

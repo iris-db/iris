@@ -1,5 +1,5 @@
 [package]
-name = "callistodb"
+name = "iris"
 version = "0.1.0"
 authors = ["Esteban Garcia <estebangarcia2121@gmail.com>"]
 edition = "2018"
@@ -23,5 +23,5 @@ default-features = false
 features = ["json"]
 
 [[bin]]
-name = "callistodb"
-path = "src/callistodb.rs"
+name = "iris"
+path = "src/iris.rs"

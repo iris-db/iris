@@ -11,8 +11,8 @@ RUN cargo build --release
 
 FROM debian:buster-slim
 
-WORKDIR callistodb
+WORKDIR iris
 
-COPY --from=builder build/target/release/callistodb .
+COPY --from=builder build/target/release/iris .
 
-CMD ["./callistodb"]
+CMD ["./iris"]
