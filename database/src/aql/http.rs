@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::sync::Mutex;
 
 use rocket::config::{Environment, LoggingLevel};
@@ -7,7 +6,7 @@ use rocket_contrib::json::Json;
 use serde_json::{json, Value};
 
 use crate::aql::context::HttpContext;
-use crate::aql::directive::DirectiveError;
+use crate::aql::directive::new_error_object;
 use crate::graph::database::Database;
 use crate::graph::graph::Graph;
 use crate::lib::bson::JsonObject;
@@ -74,11 +73,7 @@ fn dispatch_query(
     let res = directive.exec(ctx);
     let mut res = match res {
       Ok(v) => v,
-      Err(v) => DirectiveError {
-        directive_key: k,
-        err_type: v,
-      }
-      .into(),
+      Err(v) => new_error_object(k, v).into(),
     };
 
     let mut final_result: JsonObject = JsonObject::new();
