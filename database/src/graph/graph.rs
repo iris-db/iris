@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::graph::node::{CreateNodeData, Node, NodeId};
+use crate::io::filesystem::DATA_PATH;
 use crate::lib::bson::{encode, Json, JsonObject};
-use crate::lib::filesystem::DATA_PATH;
 use crate::lib::uid::IntCursor;
 
 /// Default configuration.
@@ -290,7 +290,7 @@ mod tests {
   use std::path::Path;
   use test::Bencher;
 
-  use crate::lib::filesystem;
+  use crate::io::filesystem;
 
   use super::*;
 
