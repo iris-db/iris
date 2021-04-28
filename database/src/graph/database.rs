@@ -2,13 +2,13 @@ use std::array::IntoIter;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use crate::aql::directive::{Directive, DirectiveList};
-use crate::aql::directives::InsertDirective;
 use crate::graph::graph::Graph;
+use crate::query::http::directive::{Directive, DirectiveList};
+use crate::query::http::directives::InsertDirective;
 
 pub type Graphs = HashMap<String, Box<Graph>>;
 
-/// The in memory database.
+/// The in memory database representation.
 pub struct Database {
   graphs: Graphs,
   directives: DirectiveList,
@@ -26,6 +26,7 @@ impl Database {
     }
   }
 
+  /// Returns the http route context.
   pub fn route_ctx(&mut self) -> (&mut Graphs, &mut DirectiveList) {
     (&mut self.graphs, &mut self.directives)
   }

@@ -5,15 +5,15 @@
 #[macro_use]
 extern crate rocket;
 
-use crate::aql::http;
+use crate::query::http;
 use io::filesystem;
 
-mod aql;
 mod graph;
 mod io;
 mod lib;
+mod query;
 
 fn main() {
   filesystem::prepare();
-  http::start_rest_server();
+  http::server::start();
 }

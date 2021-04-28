@@ -1,6 +1,6 @@
-use crate::aql::context::HttpContext;
-use crate::aql::directive::{Directive, DirectiveDataSet, DirectiveErrorType, DirectiveResult};
 use crate::graph::node::CreateNodeData;
+use crate::query::http::context::HttpContext;
+use crate::query::http::directive::{Directive, DirectiveError, DirectiveResult};
 
 /// Insert a node into a graph.
 pub struct InsertDirective;
@@ -11,7 +11,11 @@ impl Directive for InsertDirective {
   }
 
   fn exec(&self, ctx: HttpContext) -> DirectiveResult {
-    let HttpContext { graph, data, refs } = ctx;
+    let HttpContext {
+      graph,
+      data,
+      refs: _,
+    } = ctx;
 
     let nodes = data.dispatch::<CreateNodeData>(|o| {
       let data = o.get_required("data")?;
@@ -26,7 +30,7 @@ impl Directive for InsertDirective {
 
     return match res {
       Ok(v) => Ok(v.0.into()),
-      Err(e) => Err(DirectiveErrorType::Serialization(e)),
+      Err(e) => Err(DirectiveError::Serialization(e)),
     };
   }
 }

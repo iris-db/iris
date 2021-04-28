@@ -3,9 +3,9 @@ use std::collections::HashMap;
 
 use serde_json::{json, Value};
 
-use crate::aql::context::HttpContext;
 use crate::graph::graph::SerializationError;
 use crate::lib::bson::JsonObject;
+use crate::query::http::context::HttpContext;
 
 pub type DirectiveResult = Result<JsonObject, DirectiveErrorType>;
 
