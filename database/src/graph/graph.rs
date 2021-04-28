@@ -94,7 +94,6 @@ impl Display for SerializationError {
   }
 }
 
-/// Public API. This includes CRUD operations.
 impl Graph {
   /// Creates a new node in the graph.
   pub fn new(name: &str) -> Box<Graph> {
@@ -234,7 +233,7 @@ impl Graph {
   }
 }
 
-/// Serialization API. Methods for serializing data to the disk.
+// Serialization API. Methods for serializing data to the disk.
 impl Graph {
   /// Serializes a node onto the filesystem.
   ///
@@ -309,7 +308,7 @@ mod tests {
     let res = match g.insert_nodes(Some(data)) {
       Ok(v) => v,
       Err(e) => {
-        filesystem::destroy();
+        filesystem::test_utils::destroy();
         panic!("{}", e);
       }
     };
@@ -318,7 +317,7 @@ mod tests {
     assert_eq!(res.0.count, 3);
     assert_eq!(res.1.len(), 3);
 
-    filesystem::destroy();
+    filesystem::test_utils::destroy();
   }
 
   #[test]
@@ -335,7 +334,7 @@ mod tests {
 
     match g.insert_nodes(Some(data)) {
       Err(e) => {
-        filesystem::destroy();
+        filesystem::test_utils::destroy();
         panic!("{}", e);
       }
       _ => {}
@@ -365,7 +364,7 @@ mod tests {
 
       match g.insert_nodes(Some(data)) {
         Err(e) => {
-          filesystem::destroy();
+          filesystem::test_utils::destroy();
           panic!("{}", e);
         }
         _ => {}

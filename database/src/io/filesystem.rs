@@ -1,5 +1,8 @@
 use std::fs;
 
+#[allow(dead_code)]
+const ROOT_PATH: &str = "iris";
+
 pub const DATA_PATH: &str = "iris/data";
 pub const TEMP_PATH: &str = "iris/temp";
 
@@ -14,11 +17,17 @@ pub fn prepare() {
   }
 }
 
-/// Destroys file system directories.
-pub fn destroy() {
-  for path in PATHS {
-    fs::remove_dir_all(path).err().and_then(|e| -> Option<()> {
-      panic!("{}", e.to_string());
-    });
+#[cfg(test)]
+/// Utility functions for clean up.
+pub mod test_utils {
+  use super::*;
+
+  /// Destroys file system directories.
+  pub fn destroy() {
+    fs::remove_dir_all(ROOT_PATH)
+      .err()
+      .and_then(|e| -> Option<()> {
+        panic!("{}", e.to_string());
+      });
   }
 }
