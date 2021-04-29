@@ -156,12 +156,26 @@ pub fn read_header(contents: &[u8]) -> Result<HashMap<String, String>, ReadError
   Ok(kv_pairs)
 }
 
+/// Result of reading a single chunk of data from a page.
+pub struct ReadObjectResult<S: PageSerializable> {
+  /// The object read.
+  object: S,
+  /// The position in the page where it was read.
+  ///
+  /// * `0` - Start position
+  /// * `1` - End position
+  pos: (u64, u64),
+}
+
 /// Reads the data from a BSON page.
-pub fn read_contents<S>(contents: &[u8], serializable: S) -> Result<Vec<S>, ReadError>
+pub fn read_contents<S>(
+  contents: &[u8],
+  serializable: S,
+) -> Result<Vec<ReadObjectResult<S>>, ReadError>
 where
   S: PageSerializable,
 {
-  let mut acc: Vec<Document> = Vec::new();
+  let mut acc: Vec<(Document, (u64, u64))> = Vec::new();
 
   let mut cursor = Cursor::new(contents);
   // Read until the first new line to skip the page header. The page header is read separately from
@@ -180,20 +194,34 @@ where
       break;
     }
 
+    let start_pos = cursor.position();
+
     let res = Document::from_reader(&mut cursor);
 
+    let end_pos = cursor.position();
+
     match res {
-      Ok(document) => acc.push(document),
+      Ok(document) => acc.push((document, (start_pos, end_pos))),
       Err(e) => return Err(ReadError::CorruptedBsonDocument(e)),
     }
   }
 
-  let mut fin: Vec<S> = Vec::new();
+  let mut fin: Vec<ReadObjectResult<S>> = Vec::new();
 
   acc
     .into_iter()
-    .map(|d| Json::from(Bson::from(d).into_relaxed_extjson()).to_object())
-    .for_each(|o| fin.push(serializable.unmarshall(o)));
+    .map(|read| {
+      (
+        Json::from(Bson::from(read.0).into_relaxed_extjson()).to_object(),
+        read.1,
+      )
+    })
+    .for_each(|res| {
+      fin.push(ReadObjectResult {
+        object: serializable.unmarshall(res.0),
+        pos: res.1,
+      })
+    });
 
   Ok(fin)
 }
@@ -254,14 +282,14 @@ mod tests {
 
   #[test]
   fn test_read_contents() {
-    let original_a = json!(
+    let object_a = json!(
       {
         "firstName": "John",
         "lastName": "Smith"
       }
     );
 
-    let original_b = json!(
+    let object_b = json!(
       {
         "firstName": "Bobby",
         "lastName": "Brown"
@@ -285,8 +313,8 @@ mod tests {
       buf
     }
 
-    let buf_a = to_writer(original_a);
-    let buf_b = to_writer(original_b);
+    let buf_a = to_writer(object_a);
+    let buf_b = to_writer(object_b);
 
     let wrapper = IdWrapper {
       first_name: "".to_string(),
@@ -300,10 +328,30 @@ mod tests {
       .ok()
       .unwrap();
 
-    assert_eq!(res[0].first_name, "John");
-    assert_eq!(res[0].last_name, "Smith");
+    let header_len = header.len() as u64;
+    let buf_a_len = buf_a.len() as u64;
+    let buf_b_len = buf_b.len() as u64;
 
-    assert_eq!(res[1].first_name, "Bobby");
-    assert_eq!(res[1].last_name, "Brown");
+    // Object a assertions.
+    let object_a = &res[0].object;
+
+    assert_eq!(object_a.first_name, "John");
+    assert_eq!(object_a.last_name, "Smith");
+
+    let pos_b = &res[0].pos;
+
+    assert_eq!(pos_b.0, header_len);
+    assert_eq!(pos_b.1, header_len + buf_a_len);
+
+    // Object b assertions.
+    let object_b = &res[1].object;
+
+    assert_eq!(object_b.first_name, "Bobby");
+    assert_eq!(object_b.last_name, "Brown");
+
+    let pos_b = &res[1].pos;
+
+    assert_eq!(pos_b.0, header_len + buf_a_len);
+    assert_eq!(pos_b.1, header_len + buf_a_len + buf_b_len)
   }
 }
