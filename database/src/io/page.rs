@@ -15,13 +15,6 @@ use std::path::Path;
 /// The maximum is 2MB.
 pub const MAX_PAGE_SIZE: usize = 2E6 as usize;
 
-/// Metadata about a page.
-///
-/// A page header contains any offsets in the page.
-pub struct PageHeader {
-  offsets: Vec<u8>,
-}
-
 /// Represents an object that is able to be serialized from a page.
 pub trait PageSerializable {
   /// Marshall a struct into a JSON object which is eventually converted into BSON.
