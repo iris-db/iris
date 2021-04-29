@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, Cursor, Write};
+use std::io::{BufRead, Cursor, Error, Write};
 use std::string::FromUtf8Error;
 
 use bson::{Bson, Document};
@@ -12,8 +12,10 @@ use std::path::{Path, PathBuf};
 
 /// The maximum amount of data that is able to fit on a single page.
 ///
-/// The maximum is 2MB.
+/// The standard maximum is 2MB.
 pub const MAX_PAGE_SIZE: usize = 2E6 as usize;
+/// File extension of the page metadata.
+pub const META_PAGE_EXT: &str = "meta";
 
 /// Represents an object that is able to be serialized from a page.
 pub trait PageSerializable {
@@ -32,26 +34,23 @@ pub enum WriteError {
   PageSizeExceeded(usize),
 }
 
-/// Creates a metadata file containing the page header.
-pub fn new(name: &str) -> Result<File, io::Error> {
-  File::create(get_header_path(name))
+impl From<io::Error> for WriteError {
+  fn from(e: Error) -> Self {
+    WriteError::Io(e)
+  }
 }
 
-/// Updates a page header with the new key-value pairs.
-fn update_header(new: HashMap<String, String>) -> Vec<u8> {
-  let mut buf: Vec<u8> = Vec::new();
+/// Creates a metadata file containing the page header.
+pub fn new(name: &str) -> Result<(), WriteError> {
+  let mut file = File::create(get_meta_path(name))?;
 
-  for (index, (key, value)) in new.iter().enumerate() {
-    buf.append(&mut key.clone().into_bytes());
-    buf.push(b'=');
-    buf.append(&mut value.clone().into_bytes());
+  let bytes = marshall_header(Header::default());
+  write(&mut file, bytes)
+}
 
-    if index != new.len() - 1 {
-      buf.push(b' ');
-    }
-  }
-
-  buf
+/// Opens a the next page file with available space.
+pub fn open(name: &str) -> Result<File, io::Error> {
+  File::open(get_next_page_path(name))
 }
 
 /// Returns the length of the implementer as a usize.
@@ -77,17 +76,17 @@ impl<T> ComputableLength for Vec<T> {
 }
 
 /// Writes data to a file, restricting it to the maximum page size.
-pub fn write<T>(target: &mut T, contents: &[u8]) -> Result<(), WriteError>
+pub fn write<T>(to: &mut T, contents: Vec<u8>) -> Result<(), WriteError>
 where
   T: Write + ComputableLength,
 {
-  let total_size = target.len().unwrap() + contents.len();
+  let total_size = to.len().unwrap() + contents.len();
 
   if total_size > MAX_PAGE_SIZE {
     return Err(WriteError::PageSizeExceeded(total_size - MAX_PAGE_SIZE));
   }
 
-  match target.write(&*contents) {
+  match to.write(&*contents) {
     Err(e) => return Err(WriteError::Io(e)),
     _ => {}
   }
@@ -95,9 +94,19 @@ where
   Ok(())
 }
 
-/// Returns the header path of a page by name.
-pub fn get_header_path(name: &str) -> PathBuf {
-  Path::new(DATA_PATH).join([name, ".head"].concat())
+/// Gets the path of the page meta file.
+pub fn get_meta_path(name: &str) -> PathBuf {
+  get_page_with_ext(name, META_PAGE_EXT)
+}
+
+/// Gets the path of the page with available disk space.
+pub fn get_next_page_path(name: &str) -> PathBuf {
+  get_page_with_ext(name, "0")
+}
+
+/// Concatenates a file extension to a page name, returning the full relative path.
+fn get_page_with_ext(name: &str, ext: &str) -> PathBuf {
+  Path::new(DATA_PATH).join(&[name, ".", ext].concat())
 }
 
 #[derive(Debug)]
@@ -113,16 +122,59 @@ pub enum ReadError {
   MalformedHeader,
 }
 
-/// Reads a page header from a set of bytes. Page headers are stored in a `<PAGE_NAME>.meta` file.
-///
 /// A page header is a key-value string that contains metadata about the page. Header key-pairs are
 /// separated by a whitespace: `KEY1=VALUE KEY2=VALUE`. Headers will always end with a newline
 /// character `\n`.
 ///
 /// Each header contains the following key-value pairs.
 /// * `COUNT` - The amount of BSON documents
-/// * `OFFSET` - 1 if data overflows to the next page and 0 if all data fits on the current page.
-pub fn read_header(contents: &[u8]) -> Result<HashMap<String, String>, ReadError> {
+/// * `POS` - The next available page file
+pub struct Header {
+  /// BSON document count.
+  pub count: u64,
+  /// Next page with available disk space.
+  pub pos: u64,
+}
+
+impl From<HashMap<String, String>> for Header {
+  fn from(map: HashMap<String, String>) -> Self {
+    Header {
+      count: Header::get_int("COUNT", &map),
+      pos: Header::get_int("POS", &map),
+    }
+  }
+}
+
+impl Into<HashMap<String, String>> for Header {
+  fn into(self) -> HashMap<String, String> {
+    vec![
+      ("COUNT".to_string(), self.count.to_string()),
+      ("POS".to_string(), self.pos.to_string()),
+    ]
+    .into_iter()
+    .collect()
+  }
+}
+
+impl Header {
+  /// Creates a new header with default values.
+  pub fn default() -> Header {
+    Header { count: 0, pos: 0 }
+  }
+
+  /// Attempts to unmarshal an integer value from a key-value pair, defaulting to zero if it is not
+  /// present.
+  fn get_int(key: &str, map: &HashMap<String, String>) -> u64 {
+    map
+      .get(key)
+      .unwrap_or(&"0".to_string())
+      .parse()
+      .unwrap_or(0)
+  }
+}
+
+/// Reads a page header from a set of bytes.
+pub fn read_header(contents: Vec<u8>) -> Result<Header, ReadError> {
   let mut cursor = Cursor::new(contents);
   let mut header_bytes = Vec::new();
 
@@ -150,17 +202,36 @@ pub fn read_header(contents: &[u8]) -> Result<HashMap<String, String>, ReadError
     kv_pairs.insert(kv.0.to_string(), kv.1.to_string());
   }
 
-  Ok(kv_pairs)
+  Ok(kv_pairs.into())
+}
+
+/// Marshals a page header into a byte sequence.
+fn marshall_header(new: Header) -> Vec<u8> {
+  let mut buf: Vec<u8> = Vec::new();
+
+  let new: HashMap<String, String> = new.into();
+
+  for (index, (key, value)) in new.iter().enumerate() {
+    buf.append(&mut key.clone().into_bytes());
+    buf.push(b'=');
+    buf.append(&mut value.clone().into_bytes());
+
+    if index != new.len() - 1 {
+      buf.push(b' ');
+    }
+  }
+
+  buf
 }
 
 /// Result of reading a single chunk of data from a page.
 pub struct ReadObjectResult<S: PageSerializable> {
-  /// The object read.
+  /// The BSON object that was read.
   object: S,
-  /// The position in the page where it was read.
+  /// The position in the page where the object was read.
   ///
-  /// * `0` - Start position
-  /// * `1` - End position
+  /// * `0` - Start byte
+  /// * `1` - End byte
   pos: (u64, u64),
 }
 
@@ -172,19 +243,8 @@ pub fn read_contents<S>(
 where
   S: PageSerializable,
 {
-  let mut acc: Vec<(Document, (u64, u64))> = Vec::new();
-
   let mut cursor = Cursor::new(contents);
-  // Read until the first new line to skip the page header. The page header is read separately from
-  // the actual contents of the page.
-  match cursor.read_until(b'\n', &mut Vec::new()) {
-    Ok(s) => {
-      if s == 0 {
-        return Ok(Vec::new());
-      }
-    }
-    Err(e) => return Err(ReadError::Io(e)),
-  }
+  let mut acc: Vec<(Document, (u64, u64))> = Vec::new();
 
   loop {
     if (cursor.position() as usize) >= contents.len() - 1 {
@@ -257,7 +317,7 @@ mod tests {
   fn test_write() {
     let mut file: Vec<u8> = Vec::new();
 
-    match write(&mut file, b"Amazing data") {
+    match write(&mut file, b"Amazing data".to_vec()) {
       Err(e) => panic!("Something went wrong when writing: {:?}", e),
       _ => {}
     };
@@ -267,14 +327,14 @@ mod tests {
 
   #[test]
   fn test_read_header() {
-    let header = b"COUNT=12345 OFFSET=1";
+    let header_raw = b"COUNT=12345 POS=1".to_vec();
 
-    let kvs = read_header(header)
+    let header = read_header(header_raw)
       .ok()
       .expect("Could not read key-value pairs from header");
 
-    assert_eq!(kvs.get("COUNT").unwrap(), "12345");
-    assert_eq!(kvs.get("OFFSET").unwrap(), "1");
+    assert_eq!(header.count, 12345);
+    assert_eq!(header.pos, 1);
   }
 
   #[test]
@@ -318,14 +378,10 @@ mod tests {
       last_name: "".to_string(),
     };
 
-    // Empty page header.
-    let header = b"\n";
-
-    let res = read_contents(&[header, &buf_a[..], &buf_b[..]].concat(), wrapper)
+    let res = read_contents(&[&buf_a[..], &buf_b[..]].concat(), wrapper)
       .ok()
       .unwrap();
 
-    let header_len = header.len() as u64;
     let buf_a_len = buf_a.len() as u64;
     let buf_b_len = buf_b.len() as u64;
 
@@ -337,8 +393,8 @@ mod tests {
 
     let pos_b = &res[0].pos;
 
-    assert_eq!(pos_b.0, header_len);
-    assert_eq!(pos_b.1, header_len + buf_a_len);
+    assert_eq!(pos_b.0, 0);
+    assert_eq!(pos_b.1, buf_a_len);
 
     // Object b assertions.
     let object_b = &res[1].object;
@@ -348,7 +404,7 @@ mod tests {
 
     let pos_b = &res[1].pos;
 
-    assert_eq!(pos_b.0, header_len + buf_a_len);
-    assert_eq!(pos_b.1, header_len + buf_a_len + buf_b_len)
+    assert_eq!(pos_b.0, buf_a_len);
+    assert_eq!(pos_b.1, buf_a_len + buf_b_len)
   }
 }
