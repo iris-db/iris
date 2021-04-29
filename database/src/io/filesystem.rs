@@ -17,6 +17,8 @@ pub fn prepare() {
   }
 }
 
+pub fn open_at_data_path(file_name: &str) {}
+
 #[cfg(test)]
 /// Utility functions for clean up.
 pub mod test_utils {

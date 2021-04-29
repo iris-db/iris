@@ -6,7 +6,9 @@ use std::string::FromUtf8Error;
 
 use bson::{Bson, Document};
 
+use crate::io::filesystem::DATA_PATH;
 use crate::lib::bson::{Json, JsonObject};
+use std::path::Path;
 
 /// The maximum amount of data that is able to fit on a single page.
 ///
@@ -28,6 +30,7 @@ pub trait PageSerializable {
   fn unmarshall(&self, o: JsonObject) -> Self;
 }
 
+#[derive(Debug)]
 /// Error that occurs when attempting to write data to a page.
 pub enum WriteError {
   /// Io error.
@@ -36,6 +39,7 @@ pub enum WriteError {
   PageSizeExceeded(usize),
 }
 
+#[derive(Debug)]
 /// Error that occurs when attempting to read BSON documents from a page.
 pub enum ReadError {
   /// Io error.
@@ -48,28 +52,63 @@ pub enum ReadError {
   MalformedHeader,
 }
 
-/// Creates a new page.
-pub fn new() {}
+/// Creates a metadata file containing the page header.
+pub fn new(name: &str) -> Result<(), io::Error> {
+  File::create(Path::new(DATA_PATH).join([name, ".meta"].concat()))?;
+  Ok(())
+}
 
-/// Writes data to a file, restricting it to the maximum page size.
-pub fn write(file: &mut File, contents: Vec<u8>) -> Result<(), WriteError> {
-  let m = match file.metadata() {
-    Ok(v) => v,
-    Err(e) => return Err(WriteError::Io(e)),
-  };
+/// Updates a page header with the new key-value pairs.
+fn update_header(new: HashMap<String, String>) -> Vec<u8> {
+  let mut buf: Vec<u8> = Vec::new();
 
-  match file.sync_all() {
-    Err(e) => return Err(WriteError::Io(e)),
-    _ => {}
+  for (index, (key, value)) in new.iter().enumerate() {
+    buf.append(&mut key.clone().into_bytes());
+    buf.push(b'=');
+    buf.append(&mut value.clone().into_bytes());
+
+    if index != new.len() - 1 {
+      buf.push(b' ');
+    }
   }
 
-  let total_size = m.len() as usize + contents.len();
+  buf
+}
+
+/// Returns the length of the implementer as a usize.
+pub trait ComputableLength {
+  fn len(&self) -> Result<usize, ()>;
+}
+
+impl ComputableLength for File {
+  fn len(&self) -> Result<usize, ()> {
+    let m = match self.metadata() {
+      Ok(m) => m,
+      Err(_) => return Err(()),
+    };
+
+    Ok(m.len() as usize)
+  }
+}
+
+impl<T> ComputableLength for Vec<T> {
+  fn len(&self) -> Result<usize, ()> {
+    Ok(Vec::len(self))
+  }
+}
+
+/// Writes data to a file, restricting it to the maximum page size.
+pub fn write<T>(target: &mut T, contents: &[u8]) -> Result<(), WriteError>
+where
+  T: Write + ComputableLength,
+{
+  let total_size = target.len().unwrap() + contents.len();
 
   if total_size > MAX_PAGE_SIZE {
     return Err(WriteError::PageSizeExceeded(total_size - MAX_PAGE_SIZE));
   }
 
-  match file.write(&*contents) {
+  match target.write(&*contents) {
     Err(e) => return Err(WriteError::Io(e)),
     _ => {}
   }
@@ -187,6 +226,18 @@ mod tests {
         last_name: o.get("lastName").unwrap().as_str().unwrap().to_string(),
       }
     }
+  }
+
+  #[test]
+  fn test_write() {
+    let mut file: Vec<u8> = Vec::new();
+
+    match write(&mut file, b"Amazing data") {
+      Err(e) => panic!("Something went wrong when writing: {:?}", e),
+      _ => {}
+    };
+
+    assert_eq!(&*file, b"Amazing data");
   }
 
   #[test]
