@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 
 use crate::graph::graph::SerializationError;
 use crate::lib::bson::JsonObject;
-use crate::query::http::context::HttpContext;
+use crate::server::http::context::HttpContext;
 
 pub type DirectiveResult = Result<JsonObject, DirectiveError>;
 pub type DirectiveList = HashMap<String, &'static dyn Directive>;

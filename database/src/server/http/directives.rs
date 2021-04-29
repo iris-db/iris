@@ -1,6 +1,6 @@
 use crate::graph::node::CreateNodeData;
-use crate::query::http::context::HttpContext;
-use crate::query::http::directive::{Directive, DirectiveError, DirectiveResult};
+use crate::server::http::context::HttpContext;
+use crate::server::http::directive::{Directive, DirectiveError, DirectiveResult};
 
 /// Insert a node into a graph.
 pub struct InsertDirective;

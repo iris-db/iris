@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::graph::graph::Graph;
 use crate::lib::bson::{values_to_objects, JsonObject};
-use crate::query::http::directive::{Directive, DirectiveDataSet, DirectiveError};
+use crate::server::http::directive::{Directive, DirectiveDataSet, DirectiveError};
 
 /// The JSON key that denotes a reference to an object.
 const REF_KEY: &str = "$ref";
@@ -80,7 +80,7 @@ mod tests {
   use serde_json::json;
 
   use crate::lib::bson::Json;
-  use crate::query::http::directive::{Directive, DirectiveResult};
+  use crate::server::http::directive::{Directive, DirectiveResult};
 
   use super::*;
 
