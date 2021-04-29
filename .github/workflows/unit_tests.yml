@@ -1,5 +1,4 @@
 name: "Unit Tests"
-description: "Executes the unit tests database directory"
 
 on:
   push:
