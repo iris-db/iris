@@ -8,7 +8,7 @@ use bson::{Bson, Document};
 
 use crate::io::filesystem::DATA_PATH;
 use crate::lib::bson::{Json, JsonObject};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// The maximum amount of data that is able to fit on a single page.
 ///
@@ -32,23 +32,9 @@ pub enum WriteError {
   PageSizeExceeded(usize),
 }
 
-#[derive(Debug)]
-/// Error that occurs when attempting to read BSON documents from a page.
-pub enum ReadError {
-  /// Io error.
-  Io(io::Error),
-  /// Error while trying to deserialize a document.
-  CorruptedBsonDocument(bson::de::Error),
-  /// Not a UTF8 header.
-  CorruptedHeader(FromUtf8Error),
-  /// Improper key value formatting.
-  MalformedHeader,
-}
-
 /// Creates a metadata file containing the page header.
-pub fn new(name: &str) -> Result<(), io::Error> {
-  File::create(Path::new(DATA_PATH).join([name, ".meta"].concat()))?;
-  Ok(())
+pub fn new(name: &str) -> Result<File, io::Error> {
+  File::create(get_header_path(name))
 }
 
 /// Updates a page header with the new key-value pairs.
@@ -107,6 +93,24 @@ where
   }
 
   Ok(())
+}
+
+/// Returns the header path of a page by name.
+pub fn get_header_path(name: &str) -> PathBuf {
+  Path::new(DATA_PATH).join([name, ".head"].concat())
+}
+
+#[derive(Debug)]
+/// Error that occurs when attempting to read BSON documents from a page.
+pub enum ReadError {
+  /// Io error.
+  Io(io::Error),
+  /// Error while trying to deserialize a document.
+  CorruptedBsonDocument(bson::de::Error),
+  /// Not a UTF8 header.
+  CorruptedHeader(FromUtf8Error),
+  /// Improper key value formatting.
+  MalformedHeader,
 }
 
 /// Reads a page header from a set of bytes. Page headers are stored in a `<PAGE_NAME>.meta` file.
