@@ -9,9 +9,11 @@ E2E_TEST_ENTRY_PATH=e2e/run_tests.py
 
 function help_msg {
 	echo "\
-Iris Test Script
-e2e | Executes all e2e tests
-db  | Executes all database related tests in the database directory"
+options:
+  -u --unit    run unit tests only
+  -c --cluster run cluster tests only
+  -e --e2e     run e2e tests only
+  -a --all     run all tests"
 }
 
 function check_cmd_exists {
