@@ -1,4 +1,6 @@
-name: "Unit Tests"
+# Runs the unit tests in the database directory.
+
+name: "Database CI"
 
 on:
   push:
