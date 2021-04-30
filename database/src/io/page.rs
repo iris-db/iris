@@ -7,7 +7,7 @@ use std::string::FromUtf8Error;
 use bson::{Bson, Document};
 
 use crate::io::filesystem::DATA_PATH;
-use crate::lib::bson::{Json, JsonObject};
+use crate::lib::bson::{JsonObject, JsonObjectWrapper};
 use std::path::{Path, PathBuf};
 
 /// The maximum amount of data that is able to fit on a single page.
@@ -17,12 +17,22 @@ pub const MAX_PAGE_SIZE: usize = 2E6 as usize;
 /// File extension of the page metadata.
 pub const META_PAGE_EXT: &str = "meta";
 
-/// Represents an object that is able to be serialized from a page.
+/// Represents an object that is able to be serialized into a page.
 pub trait PageSerializable {
   /// Marshall a struct into a JSON object which is eventually converted into BSON.
-  fn marshall(&self) -> JsonObject;
+  fn marshall(&self) -> Vec<u8>;
   /// Create original struct from a JSON object.
-  fn unmarshall(&self, o: JsonObject) -> Self;
+  fn unmarshall(data: JsonObject) -> Self;
+}
+
+impl PageSerializable for Vec<u8> {
+  fn marshall(&self) -> Vec<u8> {
+    self.clone()
+  }
+
+  fn unmarshall(_o: JsonObject) -> Self {
+    Vec::new()
+  }
 }
 
 #[derive(Debug)]
@@ -76,10 +86,13 @@ impl<T> ComputableLength for Vec<T> {
 }
 
 /// Writes data to a file, restricting it to the maximum page size.
-pub fn write<T>(to: &mut T, contents: Vec<u8>) -> Result<(), WriteError>
+pub fn write<T, S>(to: &mut T, contents: S) -> Result<(), WriteError>
 where
   T: Write + ComputableLength,
+  S: PageSerializable,
 {
+  let contents = contents.marshall();
+
   let total_size = to.len().unwrap() + contents.len();
 
   if total_size > MAX_PAGE_SIZE {
@@ -236,10 +249,7 @@ pub struct ReadObjectResult<S: PageSerializable> {
 }
 
 /// Reads the data from a BSON page.
-pub fn read_contents<S>(
-  contents: &[u8],
-  serializable: S,
-) -> Result<Vec<ReadObjectResult<S>>, ReadError>
+pub fn read_contents<S>(contents: &[u8]) -> Result<Vec<ReadObjectResult<S>>, ReadError>
 where
   S: PageSerializable,
 {
@@ -269,13 +279,13 @@ where
     .into_iter()
     .map(|read| {
       (
-        Json::from(Bson::from(read.0).into_relaxed_extjson()).to_object(),
+        JsonObjectWrapper::from(Bson::from(read.0).into_relaxed_extjson()).convert(),
         read.1,
       )
     })
     .for_each(|res| {
       fin.push(ReadObjectResult {
-        object: serializable.unmarshall(res.0),
+        object: S::unmarshall(res.0),
         pos: res.1,
       })
     });
@@ -290,6 +300,7 @@ mod tests {
   use serde_json::{json, Value};
 
   use super::*;
+  use crate::lib::bson::encode;
   use crate::use_test_filesystem;
 
   /// Serializable struct for testing.
@@ -299,14 +310,16 @@ mod tests {
   }
 
   impl PageSerializable for IdWrapper {
-    fn marshall(&self) -> JsonObject {
-      json!({ "firstName": self.first_name, "lastName": self.last_name })
-        .as_object()
-        .unwrap()
-        .clone()
+    fn marshall(&self) -> Vec<u8> {
+      encode(
+        json!({ "firstName": self.first_name, "lastName": self.last_name })
+          .as_object()
+          .unwrap()
+          .clone(),
+      )
     }
 
-    fn unmarshall(&self, o: JsonObject) -> Self {
+    fn unmarshall(o: JsonObject) -> Self {
       IdWrapper {
         first_name: o.get("firstName").unwrap().as_str().unwrap().to_string(),
         last_name: o.get("lastName").unwrap().as_str().unwrap().to_string(),
@@ -391,12 +404,7 @@ mod tests {
     let buf_a = to_writer(object_a);
     let buf_b = to_writer(object_b);
 
-    let wrapper = IdWrapper {
-      first_name: "".to_string(),
-      last_name: "".to_string(),
-    };
-
-    let res = read_contents(&[&buf_a[..], &buf_b[..]].concat(), wrapper)
+    let res = read_contents::<IdWrapper>(&[&buf_a[..], &buf_b[..]].concat())
       .ok()
       .unwrap();
 

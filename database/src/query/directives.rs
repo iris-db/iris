@@ -22,13 +22,17 @@ impl Directive for InsertDirective {
         None => None,
       };
 
-      let res = graph.insert(Node::new(graph.next_id(), data, None))?;
+      let id = graph.next_id();
+
+      let res = graph.insert(Node::new(id, data, None))?;
 
       Ok(res as u64)
     })?;
 
+    let count = res.len();
+
     let res =
-      JsonObjectWrapper::from(json!({ "time": res.into_iter().sum::<u64>(), "count": res.len() }));
+      JsonObjectWrapper::from(json!({ "time": res.into_iter().sum::<u64>(), "count": count }));
 
     res.into()
   }

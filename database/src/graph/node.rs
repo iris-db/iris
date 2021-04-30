@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::graph::edge::Edge;
 use crate::io::page::PageSerializable;
-use crate::lib::bson::JsonObject;
+use crate::lib::bson::{encode, JsonObject};
 use serde_json::Value;
 
 /// Create a node from a BSON string and edges.
@@ -23,8 +23,12 @@ pub struct Node {
 }
 
 impl Node {
-  pub fn new(id: NodeId, data: Value, edges: Vec<Edge>) -> Node {
-    Node { id, data, edges }
+  pub fn new(id: NodeId, data: Option<Value>, edges: Option<Vec<Edge>>) -> Node {
+    Node {
+      id,
+      data: data.unwrap_or(Value::Object(JsonObject::new())),
+      edges: edges.unwrap_or(Vec::new()),
+    }
   }
 
   pub fn id(&self) -> &NodeId {
@@ -41,16 +45,18 @@ impl Node {
 }
 
 impl PageSerializable for Node {
-  fn marshall(&self) -> JsonObject {
-    serde_json::to_value(self)
-      .unwrap()
-      .as_object()
-      .unwrap()
-      .clone()
+  fn marshall(&self) -> Vec<u8> {
+    encode(
+      serde_json::to_value(self)
+        .unwrap()
+        .as_object()
+        .unwrap()
+        .clone(),
+    )
   }
 
-  fn unmarshall(&self, o: JsonObject) -> Self {
-    serde_json::from_value(o.into()).unwrap()
+  fn unmarshall(o: JsonObject) -> Self {
+    serde_json::from_value(Value::from(o)).unwrap()
   }
 }
 
@@ -81,9 +87,8 @@ mod tests {
 
   #[test]
   pub fn test_serialization() {
-    let node = Node::new(0, json!({ "hello": "world" }), Vec::new());
-
-    let node_obj = node.marshall();
+    let node = Node::new(0, Some(json!({ "hello": "world" })), Some(Vec::new()));
+    let node_obj = node.data();
 
     assert_eq!(node_obj.get("id").unwrap(), 0);
     assert_eq!(node_obj.get("data").unwrap(), &json!({ "hello": "world" }));
