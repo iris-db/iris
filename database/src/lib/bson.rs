@@ -10,21 +10,24 @@ use crate::graph::node::CreateNodeData;
 /// Type alias for an unknown JSON object.
 pub type JsonObject = Map<String, Value>;
 
-pub struct Json(Value);
+/// Wrapper for easily converting to a serde JSON object.
+pub struct JsonObjectWrapper(Value);
 
-impl Json {
-  pub fn to_object(&self) -> JsonObject {
+impl JsonObjectWrapper {
+  /// Converts a value into a cloned JSON object.
+  pub fn convert(&self) -> JsonObject {
     self.0.as_object().unwrap().clone()
   }
 
-  pub fn to_object_ref(&self) -> &JsonObject {
+  /// Converts a value into a borrowed JSON object.
+  pub fn convert_ref(&self) -> &JsonObject {
     self.0.as_object().unwrap()
   }
 }
 
-impl From<Value> for Json {
+impl From<Value> for JsonObjectWrapper {
   fn from(v: Value) -> Self {
-    Json(v)
+    JsonObjectWrapper(v)
   }
 }
 

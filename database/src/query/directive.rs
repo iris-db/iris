@@ -2,12 +2,20 @@ use std::collections::HashMap;
 
 use serde_json::{json, Value};
 
-use crate::graph::graph::SerializationError;
-use crate::lib::bson::JsonObject;
+use crate::io::page;
+use crate::io::page::WriteError;
+use crate::lib::bson::{JsonObject, JsonObjectWrapper};
 use crate::server::http::context::HttpContext;
 
-pub type DirectiveResult = Result<JsonObject, DirectiveError>;
 pub type DirectiveList = HashMap<String, &'static dyn Directive>;
+
+pub type DirectiveResult = Result<JsonObject, DirectiveError>;
+
+impl From<JsonObjectWrapper> for DirectiveResult {
+  fn from(w: JsonObjectWrapper) -> Self {
+    Ok(w.convert())
+  }
+}
 
 /// A prefixed JSON key that executes a database query.
 pub trait Directive: Sync + Send {
@@ -40,6 +48,8 @@ impl DirectiveData<'_> {
       None => Err(DirectiveError::MissingKey(key.to_string())),
     };
   }
+
+  pub fn evaluate_expr() {}
 }
 
 /// Wrapper to execute an action on each directive object in the directive array.
@@ -51,10 +61,10 @@ impl DirectiveDataSet {
   }
 
   /// Dispatches the directive on each object in the directive array.
-  pub fn dispatch<T>(
-    &self,
-    action: fn(&DirectiveData) -> Result<T, DirectiveError>,
-  ) -> Result<Vec<T>, DirectiveError> {
+  pub fn dispatch<T, F>(&self, mut action: F) -> Result<Vec<T>, DirectiveError>
+  where
+    F: FnMut(&DirectiveData) -> Result<T, DirectiveError>,
+  {
     let mut acc: Vec<T> = Vec::new();
 
     for o in &self.0 {
@@ -70,21 +80,27 @@ impl DirectiveDataSet {
 pub enum DirectiveError {
   /// A required JSON key is missing.
   MissingKey(String),
-  /// Serialization error while executing the directive.
-  Serialization(SerializationError),
+  /// Error while writing to a page.
+  PageWrite(page::WriteError),
   /// Expected an array for the directive value.
   ExpectedArray,
   /// Expected an object for the directive value.
   ExpectedObject,
 }
 
+impl From<page::WriteError> for DirectiveError {
+  fn from(e: WriteError) -> Self {
+    DirectiveError::PageWrite(e)
+  }
+}
+
 impl DirectiveError {
   pub fn get_message(&self) -> String {
     return match self {
       DirectiveError::MissingKey(key) => format!("Missing required key: {}", key),
-      DirectiveError::Serialization(_) => "Node serialization error".into(),
       DirectiveError::ExpectedArray => "Expected directive data to be an array".into(),
       DirectiveError::ExpectedObject => "Expected directive data be an object".into(),
+      DirectiveError::PageWrite(_) => "Could not save data to filesystem".into(),
     };
   }
 
@@ -92,9 +108,9 @@ impl DirectiveError {
   pub fn get_data(&self) -> Value {
     return match self {
       DirectiveError::MissingKey(key) => json!({ "key": key }),
-      DirectiveError::Serialization(v) => Value::Object(v.into()),
       DirectiveError::ExpectedArray => json!({}),
       DirectiveError::ExpectedObject => json!({}),
+      DirectiveError::PageWrite(_) => json!({}),
     };
   }
 }

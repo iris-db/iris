@@ -4,6 +4,7 @@ use std::iter::FromIterator;
 
 use crate::graph::graph::Graph;
 use crate::query::directive::{Directive, DirectiveList};
+use crate::query::directives::InsertDirective;
 
 pub type Graphs = HashMap<String, Box<Graph>>;
 
@@ -40,6 +41,6 @@ impl Database {
 
   /// Returns a vec of all registered directives.
   fn register_directives() -> Vec<&'static dyn Directive> {
-    vec![]
+    vec![&InsertDirective]
   }
 }

@@ -79,7 +79,7 @@ impl HttpContext<'_> {
 mod tests {
   use serde_json::json;
 
-  use crate::lib::bson::Json;
+  use crate::lib::bson::JsonObjectWrapper;
   use crate::query::directive::{Directive, DirectiveResult};
 
   use super::*;
@@ -88,7 +88,7 @@ mod tests {
   fn test_extract_directive_data() {
     let g = &mut Graph::new("TEST");
 
-    let json = Json::from(json!(
+    let json = JsonObjectWrapper::from(json!(
       {
         "insert": [
           {
@@ -117,7 +117,7 @@ mod tests {
       }
     }
 
-    let ctx = HttpContext::try_new(g, &TestDirective, json.to_object_ref())
+    let ctx = HttpContext::try_new(g, &TestDirective, json.convert_ref())
       .ok()
       .expect("Could not create HttpContext");
 
@@ -127,7 +127,7 @@ mod tests {
       .dispatch::<()>(|o| {
         assert!(
           o.data().eq(
-            Json::from(json!({
+            JsonObjectWrapper::from(json!({
               "$ref": "c",
               "data": {
                 "age": 32,
@@ -137,7 +137,7 @@ mod tests {
                 }
               }
             }))
-            .to_object_ref()
+            .convert_ref()
           )
         );
 
@@ -151,7 +151,7 @@ mod tests {
   fn test_ref_traversal() {
     let g = &mut Graph::new("TEST");
 
-    let json = Json::from(json!(
+    let json = JsonObjectWrapper::from(json!(
       {
         "get": [
           {
@@ -194,24 +194,24 @@ mod tests {
       }
     }
 
-    let ctx = HttpContext::try_new(g, &TestDirective, json.to_object_ref())
+    let ctx = HttpContext::try_new(g, &TestDirective, json.convert_ref())
       .ok()
       .expect("Could not create HttpContext");
     let refs = ctx.refs;
 
     assert!(
       refs.get("a").unwrap().eq(
-        Json::from(json!({
+        JsonObjectWrapper::from(json!({
           "$ref": "a",
           "a": "b"
         }))
-        .to_object_ref()
+        .convert_ref()
       )
     );
 
     assert!(
       refs.get("b").unwrap().eq(
-        Json::from(json!({
+        JsonObjectWrapper::from(json!({
           "$ref": "b",
           "username": "Steve",
           "name": {
@@ -219,13 +219,13 @@ mod tests {
             "last": "Smith"
           }
         }))
-        .to_object_ref()
+        .convert_ref()
       )
     );
 
     assert!(
       refs.get("c").unwrap().eq(
-        Json::from(json!({
+        JsonObjectWrapper::from(json!({
           "$ref": "c",
           "data": {
             "age": 32,
@@ -235,7 +235,7 @@ mod tests {
             }
           }
         }))
-        .to_object_ref()
+        .convert_ref()
       )
     );
   }
