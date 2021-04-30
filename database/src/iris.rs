@@ -5,13 +5,13 @@
 #[macro_use]
 extern crate rocket;
 
-use crate::query::http;
+use crate::server::http;
 use io::filesystem;
 
 mod graph;
 mod io;
 mod lib;
-mod query;
+mod server;
 
 fn main() {
   filesystem::prepare();
