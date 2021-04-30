@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 use crate::graph::graph::Graph;
-use crate::query::http::directive::{Directive, DirectiveList};
-use crate::query::http::directives::InsertDirective;
+use crate::server::http::directive::{Directive, DirectiveList};
+use crate::server::http::directives::InsertDirective;
 
 pub type Graphs = HashMap<String, Box<Graph>>;
 
@@ -35,12 +35,12 @@ impl Database {
   fn load_graphs() -> Graphs {
     HashMap::from_iter(IntoIter::new([(
       "default".to_string(),
-      Graph::new("default"),
+      Box::new(Graph::new("default")),
     )]))
   }
 
   /// Returns a vec of all registered directives.
   fn register_directives() -> Vec<&'static dyn Directive> {
-    vec![&InsertDirective]
+	vec![]
   }
 }

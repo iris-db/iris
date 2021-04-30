@@ -18,7 +18,7 @@ pub struct HttpContext<'a> {
 
 impl HttpContext<'_> {
   pub fn try_new<'a>(
-    graph: &'a mut Box<Graph>,
+    graph: &'a mut Graph,
     directive: &'static dyn Directive,
     body: &JsonObject,
   ) -> Result<HttpContext<'a>, DirectiveError> {
