@@ -5,7 +5,7 @@ STATIC_C_LIB_PATH = build
 
 TOOLCHAINS = +nightly
 
-all: expressions test server
+all: expressions server
 
 expressions:
 	@echo Building expressions lib
@@ -16,7 +16,3 @@ expressions:
 server:
 	@echo Building server release
 	@cargo $(TOOLCHAINS) build --release
-
-test:
-	@echo Running unit tests
-	@cargo $(TOOLCHAINS) test

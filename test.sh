@@ -60,6 +60,9 @@ case "$1" in
 	*)            help_msg; exit 0            ;;
 esac
 
+# Prepare tests
+make all
+
 TEST_SEP=':' read -r -a TESTS <<< "$TEST_SET"
 
 for TEST in "${TESTS[@]}"
