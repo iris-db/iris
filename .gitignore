@@ -3,10 +3,13 @@ database/target
 database/Cargo.lock
 database/iris
 
+# Artifacts
+**/build
+**/dist
+
 __pycache__
 
 # IDE
 .idea
-*.idea
 
 .DS_Store
