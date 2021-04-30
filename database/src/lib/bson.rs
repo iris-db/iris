@@ -1,11 +1,7 @@
 use std::convert::TryFrom;
-use std::fs::File;
 
-use bson::{Bson, Document};
+use bson::Document;
 use serde_json::{Map, Value};
-
-use crate::graph::graph::Graph;
-use crate::graph::node::CreateNodeData;
 
 /// Type alias for an unknown JSON object.
 pub type JsonObject = Map<String, Value>;
