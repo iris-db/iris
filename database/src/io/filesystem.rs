@@ -22,6 +22,8 @@ pub fn prepare() {
 /// Utility functions for clean up.
 pub mod test_utils {
   use super::*;
+  use std::io::Error;
+  use std::path::Path;
 
   #[macro_export]
   macro_rules! use_test_filesystem {
@@ -49,9 +51,6 @@ pub mod test_utils {
 
   /// Destroys file system directories.
   pub fn destroy() {
-    match fs::remove_dir_all(ROOT_PATH) {
-      Err(e) => panic!("{}", e),
-      _ => {}
-    }
+    let _ = fs::remove_dir_all(ROOT_PATH);
   }
 }

@@ -79,19 +79,3 @@ impl PartialEq for Node {
     self.id.eq(&other.id)
   }
 }
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-  use serde_json::json;
-
-  #[test]
-  pub fn test_serialization() {
-    let node = Node::new(0, Some(json!({ "hello": "world" })), Some(Vec::new()));
-    let node_obj = node.data();
-
-    assert_eq!(node_obj.get("id").unwrap(), 0);
-    assert_eq!(node_obj.get("data").unwrap(), &json!({ "hello": "world" }));
-    assert_eq!(node_obj.get("edges").unwrap(), &Value::Array(Vec::new()));
-  }
-}
