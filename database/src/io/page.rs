@@ -290,6 +290,7 @@ mod tests {
   use serde_json::{json, Value};
 
   use super::*;
+  use crate::use_test_filesystem;
 
   /// Serializable struct for testing.
   struct IdWrapper {
@@ -314,6 +315,15 @@ mod tests {
   }
 
   #[test]
+  fn test_new() {
+    use_test_filesystem!();
+
+    new("test").expect("Error while creating test page");
+
+    assert!(Path::exists(&get_meta_path("test")))
+  }
+
+  #[test]
   fn test_write() {
     let mut file: Vec<u8> = Vec::new();
 
@@ -323,6 +333,14 @@ mod tests {
     };
 
     assert_eq!(&*file, b"Amazing data");
+  }
+
+  #[test]
+  fn test_get_meta_path() {
+    let path = get_meta_path("test");
+    let expected = &[DATA_PATH, "/test.meta"].concat();
+
+    assert_eq!(path.to_str().unwrap(), expected);
   }
 
   #[test]

@@ -11,25 +11,47 @@ pub const PATHS: &[&str] = &[DATA_PATH, TEMP_PATH];
 /// Initializes all of the directories for the database process.
 pub fn prepare() {
   for path in PATHS {
-    fs::create_dir_all(path).err().and_then(|e| -> Option<()> {
-      panic!("{}", e.to_string());
-    });
+    match fs::create_dir_all(path) {
+      Err(e) => panic!("{}", e),
+      _ => {}
+    }
   }
 }
-
-pub fn open_at_data_path(file_name: &str) {}
 
 #[cfg(test)]
 /// Utility functions for clean up.
 pub mod test_utils {
   use super::*;
 
+  #[macro_export]
+  macro_rules! use_test_filesystem {
+    () => {
+      let _fs = crate::io::filesystem::test_utils::TestFilesystem::new();
+    };
+  }
+
+  /// Destroys file system completing a test.
+  pub struct TestFilesystem;
+
+  impl TestFilesystem {
+    /// Initializes the test filesystem.
+    pub fn new() -> TestFilesystem {
+      prepare();
+      TestFilesystem
+    }
+  }
+
+  impl Drop for TestFilesystem {
+    fn drop(&mut self) {
+      destroy()
+    }
+  }
+
   /// Destroys file system directories.
   pub fn destroy() {
-    fs::remove_dir_all(ROOT_PATH)
-      .err()
-      .and_then(|e| -> Option<()> {
-        panic!("{}", e.to_string());
-      });
+    match fs::remove_dir_all(ROOT_PATH) {
+      Err(e) => panic!("{}", e),
+      _ => {}
+    }
   }
 }
