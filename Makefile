@@ -6,7 +6,7 @@ all: $(SUBDIRS)
 
 $(SUBDIRS):
 	@echo Building
-	@$(MAKE) -w -C $@
+	@$(MAKE) -w -C $@ all
 
 image:
 	@echo Building docker image

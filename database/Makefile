@@ -8,10 +8,10 @@ TOOLCHAINS = +nightly
 all: expressions server
 
 expressions:
-	@echo Building expressions lib
-	@$(MAKE) -w -C $(EXPRESSIONS_PATH)
+	@echo Building expressions library
+	@$(MAKE) -w -C $(EXPRESSIONS_PATH) lib
 	@mkdir -p $(STATIC_C_LIB_PATH)/expressions
-	@mv $(EXPRESSIONS_PATH)/dist/* $(STATIC_C_LIB_PATH)/expressions
+	@cp $(EXPRESSIONS_PATH)/dist/* $(STATIC_C_LIB_PATH)/expressions
 
 server:
 	@echo Building server release

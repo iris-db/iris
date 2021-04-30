@@ -1,6 +1,5 @@
 # Database
 database/target
-database/Cargo.lock
 database/iris
 
 # Artifacts
