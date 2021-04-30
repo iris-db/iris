@@ -35,7 +35,7 @@ impl Database {
   fn load_graphs() -> Graphs {
     HashMap::from_iter(IntoIter::new([(
       "default".to_string(),
-      Box::new(Graph::new("default")),
+      Box::new(Graph::new("default").unwrap()),
     )]))
   }
 

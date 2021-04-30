@@ -2,16 +2,18 @@ extern crate test;
 
 use std::fmt::{Display, Formatter};
 use std::io::Error;
-use std::{fmt, fs};
+use std::{fmt, fs, io};
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::graph::node::{CreateNodeData, Node, NodeId};
 use crate::io::page;
-use crate::io::page::MAX_PAGE_SIZE;
-use crate::lib::bson::{encode, Json, JsonObject};
+use crate::io::page::{PageSerializable, WriteError, MAX_PAGE_SIZE};
+use crate::lib::bson::{encode, JsonObject, JsonObjectWrapper};
 use crate::lib::uid::IntCursor;
+use std::fs::{File, OpenOptions};
+use std::time::Instant;
 
 /// A collection of graph nodes.
 pub struct Graph {
@@ -44,77 +46,43 @@ impl From<CrudOperationMetadata> for JsonObject {
   }
 }
 
-/// Error that occurs while serializing a node. Errors can be caused by the filesystem or a node
-/// format error, such as exceeding the maximum node size.
-pub enum SerializationError {
-  /// Caused by the rust fs api.
-  Filesystem(Error),
-  /// Caused by a node exceeded the maximum node size.
-  NodeSizeExceeded(NodeId),
-}
-
-impl From<&SerializationError> for JsonObject {
-  fn from(err: &SerializationError) -> Self {
-    return match err {
-			SerializationError::Filesystem(e) => {
-				let s = e.to_string();
-
-				Json::from(json!({
-          "error": {
-            "msg": format!("CRITICAL FILESYSTEM ERROR: {}", s),
-            "data": s
-          }
-        })).to_object()
-			}
-			SerializationError::NodeSizeExceeded(id) => Json::from(json!({
-        "error": {
-          "msg": format!("[Node Id: {}] Exceeded the maximum node size of {} bytes", id, MAX_PAGE_SIZE),
-          "data": id
-        }
-      })).to_object()
-		};
-  }
-}
-
-impl Display for SerializationError {
-  fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-    return match self {
-      SerializationError::Filesystem(e) => {
-        write!(f, "[Filesystem] SerializationError: {}", e.to_string())
-      }
-      SerializationError::NodeSizeExceeded(id) => {
-        write!(f, "[NodeSizeExceeded] SerializationError: {}", id)
-      }
-    };
-  }
-}
-
 impl Graph {
-  pub fn new(name: &str) -> Graph {
-    page::new(name);
+  /// Creates a new graph along and initializes a page.
+  pub fn new(name: &str) -> Result<Graph, page::WriteError> {
+    page::new(name)?;
 
-    Graph {
+    Ok(Graph {
       name: name.to_string(),
       cursor: IntCursor::new(),
       nodes: Vec::new(),
       page_pos: 0,
-    }
+    })
+  }
+
+  /// Next available node id
+  pub fn next_id(&mut self) -> u64 {
+    self.cursor.next()
   }
 }
 
+/// The time it takes to complete an operation in milliseconds.
+type OperationTime = u128;
+
 // Crud operations.
 impl Graph {
-  /// Inserts a group of nodes into the graph.
-  fn insert(&mut self, nodes: Vec<Box<Node>>) -> Result<(), SerializationError> {
-    // for node in nodes {
-    //
-    //
-    // 	page::write(node, )
-    //
-    //   self.nodes.push(node);
-    //
-    // }
+  /// Inserts a node into the graph.
+  pub fn insert(&mut self, node: Node) -> Result<OperationTime, page::WriteError> {
+    let time = Instant::now();
 
-    Ok(())
+    let path = page::get_next_page_path(&*self.name);
+    let mut file = OpenOptions::new()
+      .create(true)
+      .write(true)
+      .append(true)
+      .open(path)?;
+
+    page::write(&mut file, node)?;
+
+    Ok(time.elapsed().as_millis())
   }
 }
