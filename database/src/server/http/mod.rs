@@ -1,4 +1,2 @@
-mod context;
-pub mod directive;
-pub mod directives;
+pub mod context;
 pub mod server;

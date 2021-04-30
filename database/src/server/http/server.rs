@@ -8,8 +8,8 @@ use serde_json::{json, Value};
 use crate::graph::database::Database;
 use crate::graph::graph::Graph;
 use crate::lib::bson::JsonObject;
+use crate::query::directive::new_error_object;
 use crate::server::http::context::HttpContext;
-use crate::server::http::directive::new_error_object;
 
 type RouteContext = Mutex<Database>;
 

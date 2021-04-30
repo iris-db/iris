@@ -11,6 +11,7 @@ use io::filesystem;
 mod graph;
 mod io;
 mod lib;
+mod query;
 mod server;
 
 fn main() {
