@@ -42,20 +42,22 @@ fn dispatch_query(
   graph_name: String,
   body: Json<JsonObject>,
   ctx: State<RouteContext>,
-) -> Json<Vec<Value>> {
+) -> Json<Value> {
   let mut db = ctx.inner().lock().unwrap();
   let (graphs, directives) = db.route_ctx();
 
-  let mut directive_results: Vec<Value> = Vec::new();
+  let mut results: Vec<Value> = Vec::new();
+  let mut errors: Vec<Value> = Vec::new();
 
   let graph: Option<&mut Box<Graph>> = graphs.get_mut(graph_name.as_str());
 
   let graph = match graph {
     Some(v) => v,
     None => {
-      return Json(vec![json!({
+      errors.push(json!({
         "error": format!("Graph {} does not exist", graph_name)
-      })]);
+      }));
+      return construct_result_object(&results, &errors);
     }
   };
 
@@ -68,12 +70,22 @@ fn dispatch_query(
       None => continue,
     };
 
-    let ctx = HttpContext::try_new(graph, *directive, &data).ok().unwrap();
+    let ctx = HttpContext::try_new(graph, *directive, &data);
+    let ctx = match ctx {
+      Ok(ctx) => ctx,
+      Err(e) => {
+        errors.push(Value::Object(new_error_object(k, e)));
+        continue;
+      }
+    };
 
     let res = directive.exec(ctx);
     let mut res = match res {
       Ok(v) => v,
-      Err(v) => new_error_object(k, v).into(),
+      Err(v) => {
+        errors.push(new_error_object(k, v).into());
+        continue;
+      }
     };
 
     let mut final_result: JsonObject = JsonObject::new();
@@ -83,8 +95,15 @@ fn dispatch_query(
     );
 
     final_result.append(&mut res);
-    directive_results.push(Value::Object(final_result));
+    results.push(Value::Object(final_result));
   }
 
-  Json(directive_results)
+  construct_result_object(&results, &errors)
+}
+
+fn construct_result_object(results: &Vec<Value>, errors: &Vec<Value>) -> Json<Value> {
+  Json(json!({
+    "results": results,
+    "errors": errors,
+  }))
 }
