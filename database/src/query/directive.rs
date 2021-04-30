@@ -48,8 +48,6 @@ impl DirectiveData<'_> {
       None => Err(DirectiveError::MissingKey(key.to_string())),
     };
   }
-
-  pub fn evaluate_expr() {}
 }
 
 /// Wrapper to execute an action on each directive object in the directive array.
@@ -124,6 +122,8 @@ pub fn new_error_object(directive_key: &str, err: DirectiveError) -> JsonObject 
     Value::String(directive_key.to_string()),
   );
 
+  obj.insert("msg".to_string(), Value::from(err.get_message()));
+
   let mut data = JsonObject::new();
 
   match err.get_data() {
@@ -131,7 +131,7 @@ pub fn new_error_object(directive_key: &str, err: DirectiveError) -> JsonObject 
     _ => {}
   };
 
-  obj.append(&mut data);
+  obj.insert("data".to_string(), data.into());
 
   obj
 }
