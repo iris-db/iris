@@ -145,11 +145,11 @@ impl From<HashMap<String, String>> for Header {
   }
 }
 
-impl Into<HashMap<String, String>> for Header {
-  fn into(self) -> HashMap<String, String> {
+impl From<Header> for HashMap<String, String> {
+  fn from(header: Header) -> Self {
     vec![
-      ("COUNT".to_string(), self.count.to_string()),
-      ("POS".to_string(), self.pos.to_string()),
+      ("COUNT".to_string(), header.count.to_string()),
+      ("POS".to_string(), header.pos.to_string()),
     ]
     .into_iter()
     .collect()

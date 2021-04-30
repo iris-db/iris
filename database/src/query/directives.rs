@@ -10,6 +10,12 @@ impl Directive for InsertDirective {
   }
 
   fn exec(&self, ctx: HttpContext) -> DirectiveResult {
-    todo!()
+    let HttpContext { refs, graph, data } = ctx;
+
+    let res = data.dispatch(|o| {
+      let v = o.get_required("A")?;
+
+      Ok(1)
+    });
   }
 }

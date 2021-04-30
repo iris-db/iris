@@ -34,9 +34,9 @@ pub struct CrudOperationMetadata {
   pub time: u32,
 }
 
-impl Into<JsonObject> for CrudOperationMetadata {
-  fn into(self) -> JsonObject {
-    serde_json::to_value(self)
+impl From<CrudOperationMetadata> for JsonObject {
+  fn from(meta: CrudOperationMetadata) -> Self {
+    serde_json::to_value(meta)
       .unwrap()
       .as_object()
       .unwrap()
@@ -53,26 +53,26 @@ pub enum SerializationError {
   NodeSizeExceeded(NodeId),
 }
 
-impl Into<JsonObject> for &SerializationError {
-  fn into(self) -> JsonObject {
-    return match self {
+impl From<&SerializationError> for JsonObject {
+  fn from(err: &SerializationError) -> Self {
+    return match err {
 			SerializationError::Filesystem(e) => {
-        let s = e.to_string();
+				let s = e.to_string();
 
-        Json::from(json!({
+				Json::from(json!({
           "error": {
             "msg": format!("CRITICAL FILESYSTEM ERROR: {}", s),
             "data": s
           }
         })).to_object()
-      }
-      SerializationError::NodeSizeExceeded(id) => Json::from(json!({
+			}
+			SerializationError::NodeSizeExceeded(id) => Json::from(json!({
         "error": {
           "msg": format!("[Node Id: {}] Exceeded the maximum node size of {} bytes", id, MAX_PAGE_SIZE),
           "data": id
         }
       })).to_object()
-    };
+		};
   }
 }
 
