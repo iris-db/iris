@@ -7,7 +7,7 @@ source/iris
 **/dist
 
 # t
-t/t
+t/__TEST_SCRIPT__
 
 # IDE
 .idea

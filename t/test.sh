@@ -2,4 +2,6 @@
 
 # Compiles and runs the Go test script, removing it after usage.
 
-go build . && ./t "$@" && rm ./t
+SCRIPT_NAME=__TEST_SCRIPT__
+
+go build -o $SCRIPT_NAME t.go && ./$SCRIPT_NAME "$@" && rm ./$SCRIPT_NAME

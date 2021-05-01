@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"github.com/iris-db/iris/t/tests"
 )
 
 type testConfig struct {
@@ -12,8 +12,11 @@ type testConfig struct {
 }
 
 func main() {
-	conf := readFlags()
-	fmt.Println(conf.Cluster)
+	c := readFlags()
+
+	if c.Unit {
+		tests.ExecUnitTests()
+	}
 }
 
 // readFlags reads the command line arguments for tests.
