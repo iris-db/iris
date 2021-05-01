@@ -4,4 +4,5 @@
 
 SCRIPT_NAME=__TEST_SCRIPT__
 
-go build -o $SCRIPT_NAME t.go && ./$SCRIPT_NAME "$@" && rm ./$SCRIPT_NAME
+go build -o $SCRIPT_NAME t.go && ./$SCRIPT_NAME "$@"
+rm ./$SCRIPT_NAME

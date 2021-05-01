@@ -1,8 +1,10 @@
 package lib
 
-import "fmt"
+import (
+	"fmt"
+)
 
-// PrintDiver prints a horizontal divider.
-func PrintDiver() {
+// PrintDivider prints a horizontal divider.
+func PrintDivider() {
 	fmt.Println("============================")
 }
