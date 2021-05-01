@@ -6,9 +6,12 @@ database/iris
 **/build
 **/dist
 
-__pycache__
+# t
+t/t
 
 # IDE
 .idea
 
-.DS_Store
+# Other
+**/__pycache__
+**/*.DS_Store
