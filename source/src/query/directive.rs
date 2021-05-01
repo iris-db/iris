@@ -17,7 +17,7 @@ impl From<JsonObjectWrapper> for DirectiveResult {
   }
 }
 
-/// A prefixed JSON key that executes a database query.
+/// A prefixed JSON key that executes a source query.
 pub trait Directive: Sync + Send {
   /// The key name. Not the actual formatted JSON key.
   fn key(&self) -> &str;

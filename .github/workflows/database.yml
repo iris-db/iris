@@ -1,4 +1,4 @@
-# Runs the unit tests in the database directory.
+# Runs the unit tests in the source directory.
 
 name: "Database CI"
 

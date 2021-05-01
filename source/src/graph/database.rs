@@ -8,14 +8,14 @@ use crate::query::directives::InsertDirective;
 
 pub type Graphs = HashMap<String, Box<Graph>>;
 
-/// The in memory database representation.
+/// The in memory source representation.
 pub struct Database {
   graphs: Graphs,
   directives: DirectiveList,
 }
 
 impl Database {
-  /// Initializes a new database.
+  /// Initializes a new source.
   pub fn new() -> Database {
     Database {
       graphs: Database::load_graphs(),

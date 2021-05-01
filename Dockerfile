@@ -2,7 +2,7 @@ FROM rust:1.43 as builder
 
 WORKDIR build
 
-COPY database .
+COPY source .
 
 RUN rustup install nightly
 RUN rustup default nightly

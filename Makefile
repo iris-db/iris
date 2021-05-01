@@ -1,4 +1,4 @@
-SUBDIRS = database
+SUBDIRS = source
 
 .PHONY: $(SUBDIRS) all
 
