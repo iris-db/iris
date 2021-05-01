@@ -37,9 +37,12 @@ pub mod test_utils {
 
   impl TestFilesystem {
     /// Initializes the test filesystem.
-    pub fn new() -> TestFilesystem {
-      prepare();
-      TestFilesystem
+    pub fn new() -> Box<TestFilesystem> {
+      for path in PATHS {
+        let _ = fs::create_dir_all(path);
+      }
+
+      Box::from(TestFilesystem)
     }
   }
 
