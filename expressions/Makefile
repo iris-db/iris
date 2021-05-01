@@ -7,5 +7,5 @@ DIST=dist/lib${LIB_NAME}.a
 all: lib
 
 lib:
-	@echo Building static C library
+	@echo Building expressions as a static library
 	@go build -buildmode=c-archive -o dist/libexpressions.a main.go
