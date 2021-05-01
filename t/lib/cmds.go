@@ -61,7 +61,7 @@ func (c *RequiredCommand) Validate() error {
 }
 
 // StreamCmd executes a command and streams its STDOUT.
-func StreamCmd(name string, args ...string) {
+func StreamCmd(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmdReader, _ := cmd.StdoutPipe()
 	scanner := bufio.NewScanner(cmdReader)
@@ -75,13 +75,13 @@ func StreamCmd(name string, args ...string) {
 	}()
 
 	if err := cmd.Start(); err != nil {
-		panic(err)
+		return err
 	}
 	<-done
 	if err := cmd.Wait(); err != nil {
-		fmt.Println("Something went wrong will executing the tests")
-		os.Exit(1)
+		return err
 	}
+	return nil
 }
 
 // ExecCmdStdout executes a command, returning its STDOUT.

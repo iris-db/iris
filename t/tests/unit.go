@@ -9,14 +9,27 @@ import (
 )
 
 type unitTest struct {
-	Dir              string                 // Dir is the directory relative to the root project path.
-	RequiredCommands []*lib.RequiredCommand // RequiredCommands are the commands that are required to run the unit tests.
+	Dir              string                  // Dir is the directory relative to the root project path.
+	Exec             func(path string) error // Exec executes the testing processes.
+	RequiredCommands []*lib.RequiredCommand  // RequiredCommands are the commands that are required to run the unit tests.
 }
 
 var (
 	unitTests = []unitTest{
 		{
 			Dir: "source",
+			Exec: func(path string) error {
+				cargoManifestPath := fmt.Sprintf("%s/%s", path, "Cargo.toml")
+
+				if err := lib.StreamCmd("cargo", "+nightly", "build", "--manifest-path", cargoManifestPath); err != nil {
+					return err
+				}
+				if err := lib.StreamCmd("cargo", "+nightly", "test", "--manifest-path", cargoManifestPath); err != nil {
+					return err
+				}
+
+				return nil
+			},
 			RequiredCommands: []*lib.RequiredCommand{
 				lib.NewRequiredCommand("cargo"),
 				lib.NewRequiredCommand("rustup", lib.WithValidation(lib.CommandValidator{
@@ -45,11 +58,10 @@ func ExecUnitTests() {
 		fmt.Printf("Running [%s] tests\n", t.Dir)
 		lib.PrintDivider()
 
-		srcPath := fmt.Sprintf("../%s", t.Dir)
-		cargoManifestPath := fmt.Sprintf("%s/%s", srcPath, "Cargo.toml")
-
-		lib.StreamCmd("cargo", "+nightly", "build", "--manifest-path", cargoManifestPath)
-		lib.StreamCmd("cargo", "+nightly", "test", "--manifest-path", cargoManifestPath)
+		path := fmt.Sprintf("../%s", t.Dir)
+		if err := t.Exec(path); err != nil {
+			lib.PrintErrMessage(err.Error())
+		}
 
 		lib.PrintDivider()
 		fmt.Printf("Completed [%s] tests\n", t.Dir)
