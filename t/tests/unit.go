@@ -21,9 +21,12 @@ var (
 			Exec: func(path string) error {
 				cargoManifestPath := fmt.Sprintf("%s/%s", path, "Cargo.toml")
 
+				fmt.Println("Building project")
 				if err := lib.StreamCmd("cargo", "+nightly", "build", "--manifest-path", cargoManifestPath); err != nil {
 					return err
 				}
+
+				fmt.Println("Running tests")
 				if err := lib.StreamCmd("cargo", "+nightly", "test", "--manifest-path", cargoManifestPath); err != nil {
 					return err
 				}
