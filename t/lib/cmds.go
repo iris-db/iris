@@ -2,9 +2,11 @@ package lib
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // RequiredCommand is a command that is required to be installed in the system PATH for the test to successfully work.
@@ -63,23 +65,40 @@ func (c *RequiredCommand) Validate() error {
 // StreamCmd executes a command and streams its STDOUT.
 func StreamCmd(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
-	cmdReader, _ := cmd.StdoutPipe()
-	scanner := bufio.NewScanner(cmdReader)
 
-	done := make(chan bool)
+	stdoutPipe, _ := cmd.StdoutPipe()
+	stdoutScanner := bufio.NewScanner(stdoutPipe)
+
+	stdoutDone := make(chan bool)
 	go func() {
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
+		for stdoutScanner.Scan() {
+			fmt.Println(stdoutScanner.Text())
 		}
-		done <- true
+		stdoutDone <- true
+	}()
+
+	stderrPipe, _ := cmd.StderrPipe()
+	stderrScanner := bufio.NewScanner(stderrPipe)
+
+	var stderrContent []string
+
+	stderrDone := make(chan bool)
+	go func() {
+		for stderrScanner.Scan() {
+			stderrContent = append(stderrContent, stderrScanner.Text())
+		}
+		stderrDone <- true
 	}()
 
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	<-done
+
+	<-stdoutDone
+	<-stderrDone
+
 	if err := cmd.Wait(); err != nil {
-		return err
+		return errors.New(strings.Join(stderrContent, "\n"))
 	}
 	return nil
 }
