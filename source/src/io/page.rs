@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::io;
 use std::io::{BufRead, Cursor, Error, Write};
 use std::string::FromUtf8Error;
+use std::{fs, io};
 
 use bson::{Bson, Document};
 
@@ -52,7 +52,10 @@ impl From<io::Error> for WriteError {
 
 /// Creates a metadata file containing the page header.
 pub fn new(name: &str) -> Result<(), WriteError> {
-  let mut file = File::create(get_meta_path(name))?;
+  let p = &get_meta_path(name);
+  fs::create_dir_all(p.parent().unwrap())?;
+
+  let mut file = File::create(p)?;
 
   let bytes = marshall_header(Header::default());
   write(&mut file, bytes)
