@@ -31,7 +31,6 @@ function check_cmd_exists {
 function test_unit {
 	check_cmd_exists cargo
 
-
 	cargo +nightly build --manifest-path "$CARGO_MANIFEST"
 	cargo +nightly test --manifest-path "$CARGO_MANIFEST"
 }
