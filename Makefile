@@ -5,7 +5,6 @@ SUBDIRS = source
 all: $(SUBDIRS)
 
 $(SUBDIRS):
-	@echo Building
 	@$(MAKE) -w -C $@ all
 
 image:
