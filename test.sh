@@ -5,6 +5,8 @@
 DOCKERFILE_PATH=.
 E2E_TEST_ENTRY_PATH=e2e/run_tests.py
 
+CARGO_MANIFEST="source/Cargo.toml"
+
 # Util
 
 function help_msg {
@@ -29,10 +31,9 @@ function check_cmd_exists {
 function test_unit {
 	check_cmd_exists cargo
 
-	MANIFEST="database/Cargo.toml"
 
-	cargo +nightly build --manifest-path "$MANIFEST"
-	cargo +nightly test --manifest-path "$MANIFEST"
+	cargo +nightly build --manifest-path "$CARGO_MANIFEST"
+	cargo +nightly test --manifest-path "$CARGO_MANIFEST"
 }
 
 function test_e2e {
