@@ -14,6 +14,7 @@ mod io;
 mod lib;
 mod query;
 mod server;
+mod test_lifecycle;
 
 fn main() {
   filesystem::prepare();
