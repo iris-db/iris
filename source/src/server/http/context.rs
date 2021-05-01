@@ -81,14 +81,11 @@ mod tests {
 
   use crate::lib::bson::JsonObjectWrapper;
   use crate::query::directive::{Directive, DirectiveResult};
-  use crate::use_test_filesystem;
 
   use super::*;
 
   #[test]
   fn test_extract_directive_data() {
-    use_test_filesystem!();
-
     let g = &mut Graph::new("TEST").expect("Error while creating graph");
 
     let json = JsonObjectWrapper::from(json!(
@@ -152,8 +149,6 @@ mod tests {
 
   #[test]
   fn test_ref_traversal() {
-    use_test_filesystem!();
-
     let g = &mut Graph::new("TEST").expect("Error while creating graph");
 
     let json = JsonObjectWrapper::from(json!(

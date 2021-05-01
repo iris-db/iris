@@ -304,7 +304,6 @@ mod tests {
 
   use super::*;
   use crate::lib::bson::encode;
-  use crate::use_test_filesystem;
 
   /// Serializable struct for testing.
   struct IdWrapper {
@@ -332,8 +331,6 @@ mod tests {
 
   #[test]
   fn test_new() {
-    use_test_filesystem!();
-
     new("test").expect("Error while creating test page");
 
     assert!(Path::exists(&get_meta_path("test")))
