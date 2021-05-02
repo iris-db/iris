@@ -6,27 +6,6 @@ use serde_json::{Map, Value};
 /// Type alias for an unknown JSON object.
 pub type JsonObject = Map<String, Value>;
 
-/// Wrapper for easily converting to a serde JSON object.
-pub struct JsonObjectWrapper(Value);
-
-impl JsonObjectWrapper {
-  /// Converts a value into a cloned JSON object.
-  pub fn convert(&self) -> JsonObject {
-    self.0.as_object().unwrap().clone()
-  }
-
-  /// Converts a value into a borrowed JSON object.
-  pub fn convert_ref(&self) -> &JsonObject {
-    self.0.as_object().unwrap()
-  }
-}
-
-impl From<Value> for JsonObjectWrapper {
-  fn from(v: Value) -> Self {
-    JsonObjectWrapper(v)
-  }
-}
-
 /// Converts a vec of Value to a vec of JsonObject.
 pub fn values_to_objects(values: &Vec<Value>) -> Vec<JsonObject> {
   let mut acc: Vec<JsonObject> = Vec::new();
