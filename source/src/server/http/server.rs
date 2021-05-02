@@ -6,12 +6,11 @@ use rocket_contrib::json::Json;
 use serde_json::{json, Value};
 
 use crate::graph::database::Database;
-use crate::graph::graph::Graph;
+use crate::graph::node::Node;
 use crate::lib::bson::JsonObject;
-use crate::query::directive::new_error_object;
-use crate::server::http::context::HttpContext;
+use crate::server::http::errors;
 
-type RouteContext = Mutex<Database>;
+type RouteContext<'a> = State<'a, Mutex<Database>>;
 
 /// Starts the REST api.
 pub fn start() {
@@ -32,78 +31,44 @@ ClusterConnections: 1"
     .unwrap();
 
   rocket::custom(config)
-    .mount("/", routes![dispatch_query])
+    .mount("/", routes![insert_node])
     .manage(Mutex::new(db))
     .launch();
 }
 
-#[post("/graphs/<graph_name>", data = "<body>")]
-fn dispatch_query(
-  graph_name: String,
-  body: Json<JsonObject>,
-  ctx: State<RouteContext>,
-) -> Json<Value> {
-  let mut db = ctx.inner().lock().unwrap();
-  let (graphs, directives) = db.route_ctx();
+#[post("/graphs/<name>/_node", data = "<body>")]
+fn insert_node(name: String, body: Json<Vec<JsonObject>>, ctx: RouteContext) -> Json<Value> {
+  let mut ctx = ctx.inner().lock().unwrap();
 
-  let mut results: Vec<Value> = Vec::new();
-  let mut errors: Vec<Value> = Vec::new();
+  let graphs = ctx.graphs();
 
-  let graph: Option<&mut Box<Graph>> = graphs.get_mut(graph_name.as_str());
+  let graph = graphs.get_mut(&*name);
+
+  let mut total_time: u64 = 0;
 
   let graph = match graph {
-    Some(v) => v,
-    None => {
-      errors.push(json!({
-        "error": format!("Graph {} does not exist", graph_name)
-      }));
-      return construct_result_object(&results, &errors);
-    }
+    Some(graph) => graph,
+    None => return errors::graph_not_found(name),
   };
 
   let data = body.0;
+  for req in data {
+    let id = graph.next_id();
 
-  for k in data.keys() {
-    let directive = directives.get(k);
-    let directive = match directive {
-      Some(v) => v,
-      None => continue,
+    let data = req.get("data");
+    let data = match data {
+      Some(value) => Some(value.clone()),
+      None => None,
     };
 
-    let ctx = HttpContext::try_new(graph, *directive, &data);
-    let ctx = match ctx {
-      Ok(ctx) => ctx,
-      Err(e) => {
-        errors.push(Value::Object(new_error_object(k, e)));
-        continue;
-      }
-    };
-
-    let res = directive.exec(ctx);
-    let mut res = match res {
-      Ok(v) => v,
-      Err(v) => {
-        errors.push(new_error_object(k, v).into());
-        continue;
-      }
-    };
-
-    let mut final_result: JsonObject = JsonObject::new();
-    final_result.insert(
-      "directive".to_string(),
-      Value::String(directive.key().to_string()),
-    );
-
-    final_result.append(&mut res);
-    results.push(Value::Object(final_result));
+    // let insert_time = graph.insert(Node::new(id, data, None))?;
+    // total_time += insert_time;
   }
 
-  construct_result_object(&results, &errors)
-}
+  let count = data.len();
 
-fn construct_result_object(results: &Vec<Value>, errors: &Vec<Value>) -> Json<Value> {
   Json(json!({
-    "results": results,
-    "errors": errors,
+    "time": total_time,
+    "count": count
   }))
 }
