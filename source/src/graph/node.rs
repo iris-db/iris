@@ -18,14 +18,21 @@ pub type NodeId = u64;
 #[derive(Serialize, Deserialize)]
 pub struct Node {
   id: NodeId,
+  group: String,
   data: Value,
   edges: Vec<Edge>,
 }
 
 impl Node {
-  pub fn new(id: NodeId, data: Option<Value>, edges: Option<Vec<Edge>>) -> Node {
+  pub fn new(
+    id: NodeId,
+    group: Option<String>,
+    data: Option<Value>,
+    edges: Option<Vec<Edge>>,
+  ) -> Node {
     Node {
       id,
+      group: group.unwrap_or("".to_string()),
       data: data.unwrap_or(Value::Object(JsonObject::new())),
       edges: edges.unwrap_or(Vec::new()),
     }
