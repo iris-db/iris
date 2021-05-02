@@ -7,7 +7,7 @@ use std::{fs, io};
 use bson::{Bson, Document};
 
 use crate::io::filesystem::DATA_PATH;
-use crate::lib::bson::{JsonObject, JsonObjectWrapper};
+use crate::lib::bson::JsonObject;
 use std::path::{Path, PathBuf};
 
 /// The maximum amount of data that is able to fit on a single page.
@@ -282,7 +282,11 @@ where
     .into_iter()
     .map(|read| {
       (
-        JsonObjectWrapper::from(Bson::from(read.0).into_relaxed_extjson()).convert(),
+        Bson::from(read.0)
+          .into_relaxed_extjson()
+          .as_object()
+          .unwrap()
+          .clone(),
         read.1,
       )
     })
