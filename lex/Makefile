@@ -1,4 +1,4 @@
-LIB_NAME=expressions
+LIB_NAME=lex
 
 DIST=dist/lib${LIB_NAME}.a
 
