@@ -5,16 +5,10 @@ use std::convert::TryFrom;
 /// Utility struct for easily getting required or optional data.
 pub struct SmartJsonObject<'a>(pub &'a JsonObject);
 
-impl From<JsonObject> for SmartJsonObject<'_> {
-  fn from(o: &JsonObject) -> Self {
-    SmartJsonObject(&o)
-  }
-}
-
-impl TryFrom<&Value> for SmartJsonObject<'_> {
+impl<'a, 'b: 'a> TryFrom<&'b Value> for SmartJsonObject<'b> {
   type Error = &'static str;
 
-  fn try_from(value: &Value) -> Result<Self, Self::Error> {
+  fn try_from(value: &'b Value) -> Result<Self, Self::Error> {
     if value.is_object() {
       Ok(SmartJsonObject(value.as_object().unwrap()))
     } else {

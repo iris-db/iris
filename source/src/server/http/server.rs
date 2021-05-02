@@ -52,7 +52,7 @@ fn insert_node(name: String, body: Json<Vec<JsonObject>>, ctx: RouteContext) -> 
   };
 
   let data = body.0;
-  for req in data {
+  for req in &data {
     let id = graph.next_id();
 
     let data = req.get("data");
