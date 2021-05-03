@@ -36,7 +36,3 @@ impl Query<InsertResult> for Insert {
     Ok(0 as u64)
   }
 }
-
-fn jvm_alloc(mem_size: u32) {}
-
-fn garbage_collect() {}
