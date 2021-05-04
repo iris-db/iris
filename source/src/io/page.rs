@@ -240,7 +240,10 @@ fn marshall_header(new: Header) -> Vec<u8> {
 }
 
 /// Result of reading a single chunk of data from a page.
-pub struct ReadObjectResult<S: PageSerializable> {
+pub struct ReadObjectResult<S>
+where
+	S: PageSerializable,
+{
 	/// The BSON object that was read.
 	object: S,
 	/// The position in the page where the object was read.
