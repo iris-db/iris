@@ -19,17 +19,11 @@ var (
 		{
 			Dir: "source",
 			Exec: func(path string) error {
-				cargoManifestPath := fmt.Sprintf("%s/%s", path, "Cargo.toml")
-
 				fmt.Println("Building project")
-				if err := lib.StreamCmd("cargo", "+nightly", "build", "--manifest-path", cargoManifestPath); err != nil {
-					return err
-				}
+				lib.StreamCmd("cargo", "+nightly", "build")
 
 				fmt.Println("Running tests")
-				if err := lib.StreamCmd("cargo", "+nightly", "test", "--manifest-path", cargoManifestPath); err != nil {
-					return err
-				}
+				lib.StreamCmd("cargo", "+nightly", "test")
 
 				return nil
 			},
@@ -44,11 +38,23 @@ var (
 				})),
 			},
 		},
+		{
+			Dir: "bson",
+			Exec: func(path string) error {
+				lib.StreamCmd("go", "test", "-v")
+				return nil
+			},
+			RequiredCommands: []*lib.RequiredCommand{
+				lib.NewRequiredCommand("go"),
+			},
+		},
 	}
 )
 
 // ExecUnitTests executes all unit tests in the specified directories.
 func ExecUnitTests() {
+	var testErrors []string
+
 	for _, t := range unitTests {
 		for _, c := range t.RequiredCommands {
 			if err := c.Validate(); err != nil {
@@ -62,12 +68,31 @@ func ExecUnitTests() {
 		lib.PrintDivider()
 
 		path := fmt.Sprintf("../%s", t.Dir)
+
+		err := os.Chdir(path)
+		if err != nil {
+			panic(err)
+		}
 		if err := t.Exec(path); err != nil {
-			lib.PrintErrMessage(err.Error())
+			testErrors = append(testErrors, path)
 		}
 
 		lib.PrintDivider()
 		fmt.Printf("Completed [%s] tests\n", t.Dir)
 		lib.PrintDivider()
+
+		err = os.Chdir("../t")
+		if err != nil {
+			panic(err)
+		}
 	}
+
+	if testErrors != nil {
+		for _, p := range testErrors {
+			fmt.Printf("[%s] tests did not all pass successfully", p)
+		}
+		lib.ExitErr(errors.New("failing unit tests"))
+	}
+
+	fmt.Println("Unit tests successful")
 }

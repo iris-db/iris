@@ -63,7 +63,7 @@ func (c *RequiredCommand) Validate() error {
 }
 
 // StreamCmd executes a command and streams its STDOUT.
-func StreamCmd(name string, args ...string) error {
+func StreamCmd(name string, args ...string) {
 	cmd := exec.Command(name, args...)
 
 	stdoutPipe, _ := cmd.StdoutPipe()
@@ -91,16 +91,15 @@ func StreamCmd(name string, args ...string) error {
 	}()
 
 	if err := cmd.Start(); err != nil {
-		return err
+		ExitErr(err)
 	}
 
 	<-stdoutDone
 	<-stderrDone
 
 	if err := cmd.Wait(); err != nil {
-		return errors.New(strings.Join(stderrContent, "\n"))
+		ExitErr(errors.New(strings.Join(stderrContent, "\n")))
 	}
-	return nil
 }
 
 // ExecCmdStdout executes a command, returning its STDOUT.

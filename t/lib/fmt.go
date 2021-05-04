@@ -5,9 +5,9 @@ import (
 	"os"
 )
 
-// PrintErrMessage prints a message and exits the program with a status code of 1.
-func PrintErrMessage(msg string) {
-	fmt.Println(msg)
+// ExitErr prints an error and exits the program with a status code of 1.
+func ExitErr(err error) {
+	fmt.Println(err.Error())
 	os.Exit(1)
 }
 
