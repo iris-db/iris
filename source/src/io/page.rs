@@ -6,7 +6,7 @@ use std::{fs, io};
 
 use bson::{Bson, Document};
 
-use crate::io::filesystem::DATA_PATH;
+use crate::io::filesystem::DatabasePath;
 use crate::lib::bson::JsonObject;
 use std::path::{Path, PathBuf};
 
@@ -122,7 +122,7 @@ pub fn get_next_page_path(name: &str) -> PathBuf {
 
 /// Concatenates a file extension to a page name, returning the full relative path.
 fn get_page_with_ext(name: &str, ext: &str) -> PathBuf {
-	Path::new(DATA_PATH).join(&[name, ".", ext].concat())
+	Path::new(&DatabasePath::Data.path()).join(&[name, ".", ext].concat())
 }
 
 #[derive(Debug)]
@@ -356,7 +356,7 @@ mod tests {
 	#[test]
 	fn test_get_meta_path() {
 		let path = get_meta_path("test");
-		let expected = &[DATA_PATH, "/test.meta"].concat();
+		let expected = format!("{}/{}", DatabasePath::Data.path(), "/test.meta");
 
 		assert_eq!(path.to_str().unwrap(), expected);
 	}

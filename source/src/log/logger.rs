@@ -1,4 +1,4 @@
-use crate::io::filesystem::Paths;
+use crate::io::filesystem::DatabasePath;
 use crate::lib::bson::JsonObject;
 use crate::log::util::current_time;
 use serde::{Deserialize, Serialize};
@@ -93,7 +93,7 @@ pub fn log(msg: &str, session_id: Option<Uuid>, data: Option<JsonObject>) {
 	let log = Log::new(time, msg, session_id, data);
 
 	// Attempt to write to the filesystem.
-	let _ = Paths::Logs.write(&*log_file, log.to_string().into_bytes());
+	let _ = DatabasePath::Logs.write(&*log_file, log.to_string().into_bytes());
 }
 
 /// Logs a warning message.
@@ -109,7 +109,7 @@ pub fn fatal_err() {}
 ///
 /// A new log file is generated every 24h.
 fn current_log_file() -> Result<String, io::Error> {
-	let res = fs::read_dir(Paths::Logs.path())?;
+	let res = fs::read_dir(DatabasePath::Logs.path())?;
 
 	let mut file_names: Vec<String> = Vec::new();
 
@@ -145,6 +145,6 @@ mod tests {
 	fn test_s_log() {
 		let msg = "CONNPOOL Connecting to shard C-00-00";
 
-		assert!(Path::new(&*Paths::Logs.file("LOGF")).exists())
+		assert!(Path::new(&*DatabasePath::Logs.file("LOGF")).exists())
 	}
 }

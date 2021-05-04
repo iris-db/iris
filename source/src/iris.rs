@@ -6,17 +6,18 @@
 extern crate rocket;
 
 use crate::io::filesystem;
-use crate::server::http;
 use crate::server::tcp;
 
+#[allow(warnings, unused)]
 mod generated;
 mod graph;
 mod io;
 mod iql;
 mod lib;
-mod server;
-mod test_lifecycle;
 mod log;
+mod server;
+#[allow(unused_imports)]
+mod test_lifecycle;
 
 fn main() {
 	filesystem::prepare();
