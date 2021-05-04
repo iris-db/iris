@@ -52,8 +52,8 @@ pub struct CommandContext<'a> {
 	pub graph: &'a mut Graph,
 }
 
-/// An Iris Query Language type.
-pub enum Type {
+/// An Iris Query Language value.
+pub enum IqlValue {
 	/// A string value.
 	///
 	/// `Command -Flag "String"`
