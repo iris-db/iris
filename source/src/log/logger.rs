@@ -46,8 +46,8 @@ impl Log {
 			data: serde_json::to_value(data)
 				.unwrap_or(Value::from(JsonObject::new()))
 				.as_object()
-				.unwrap()
-				.clone(),
+				.map(|o| o.clone())
+				.unwrap_or(JsonObject::new()),
 		}
 	}
 }
@@ -144,6 +144,8 @@ mod tests {
 	#[test]
 	fn test_s_log() {
 		let msg = "CONNPOOL Connecting to shard C-00-00";
+
+		log(msg, None, None);
 
 		assert!(Path::new(&*DatabasePath::Logs.file("LOGF")).exists())
 	}

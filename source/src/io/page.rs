@@ -356,7 +356,7 @@ mod tests {
 	#[test]
 	fn test_get_meta_path() {
 		let path = get_meta_path("test");
-		let expected = format!("{}/{}", DatabasePath::Data.path(), "/test.meta");
+		let expected = format!("{}/{}", DatabasePath::Data.path(), "test.meta");
 
 		assert_eq!(path.to_str().unwrap(), expected);
 	}
