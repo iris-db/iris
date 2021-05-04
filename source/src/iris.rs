@@ -11,12 +11,12 @@ use crate::server::http;
 mod generated;
 mod graph;
 mod io;
+mod iql;
 mod lib;
-mod query;
 mod server;
 mod test_lifecycle;
 
 fn main() {
-  filesystem::prepare();
-  http::server::start();
+	filesystem::prepare();
+	http::server::start();
 }
