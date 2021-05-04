@@ -157,5 +157,5 @@ fn bindgen_test_layout_GoSlice() {
 	);
 }
 extern "C" {
-	pub fn HelloWorld() -> *mut ::std::os::raw::c_char;
+	pub fn UnmarshallNonQuotedBSON(v: GoString) -> *mut ::std::os::raw::c_char;
 }

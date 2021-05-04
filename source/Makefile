@@ -1,6 +1,6 @@
 .PHONY: all
 
-EXPRESSIONS_PATH = ../expressions
+BSON_PATH = ../bson
 STATIC_C_LIB_PATH = build
 
 TOOLCHAINS = +nightly
@@ -8,9 +8,9 @@ TOOLCHAINS = +nightly
 all: expressions server
 
 expressions:
-	@$(MAKE) -w -C $(EXPRESSIONS_PATH) lib
-	@mkdir -p $(STATIC_C_LIB_PATH)/expressions
-	@cp $(EXPRESSIONS_PATH)/dist/* $(STATIC_C_LIB_PATH)/expressions
+	@$(MAKE) -w -C $(BSON_PATH) lib
+	@mkdir -p $(STATIC_C_LIB_PATH)/bson
+	@cp $(BSON_PATH)/dist/* $(STATIC_C_LIB_PATH)/bson
 
 server:
 	@echo Building server release

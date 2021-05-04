@@ -7,7 +7,7 @@ use std::path::PathBuf;
 const EXTERN_LIB_PATH: &str = "build";
 
 fn main() {
-	link_library("expressions");
+	link_library("bson");
 }
 
 fn link_library(lib: &str) {
