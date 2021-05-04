@@ -1,2 +1,2 @@
-mod lex;
 mod commands;
+mod lex;
