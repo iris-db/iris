@@ -1,4 +1,5 @@
 indent_style = "Block"
 reorder_imports = true
-tab_spaces = 2
-version="Two"
+tab_spaces = 4
+version = "Two"
+hard_tabs = true
