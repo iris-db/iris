@@ -7,6 +7,7 @@ extern crate rocket;
 
 use crate::io::filesystem;
 use crate::server::http;
+use crate::server::tcp;
 
 mod generated;
 mod graph;
@@ -15,8 +16,10 @@ mod iql;
 mod lib;
 mod server;
 mod test_lifecycle;
+mod log;
 
 fn main() {
 	filesystem::prepare();
-	http::server::start();
+	// http::server::start();
+	tcp::server::start();
 }
