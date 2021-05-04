@@ -1,4 +1,4 @@
-LIB_NAME=lex
+LIB_NAME=bson
 
 DIST=dist/lib${LIB_NAME}.a
 
