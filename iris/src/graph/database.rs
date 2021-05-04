@@ -4,13 +4,13 @@ use std::iter::FromIterator;
 
 use crate::graph::graph::Graph;
 
-/// The in memory source representation.
+/// The in memory iris representation.
 pub struct Database {
 	graphs: HashMap<String, Box<Graph>>,
 }
 
 impl Database {
-	/// Initializes a new source.
+	/// Initializes a new iris.
 	pub fn new() -> Database {
 		Database {
 			graphs: Database::load_graphs(),

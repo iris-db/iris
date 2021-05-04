@@ -1,4 +1,4 @@
-# Runs the unit tests in the source directory.
+# Runs the unit tests in the iris directory.
 
 name: "Database CI"
 

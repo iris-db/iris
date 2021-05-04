@@ -1,6 +1,6 @@
 # Database
-source/target
-source/iris
+iris/target
+iris/iris
 
 # Artifacts
 **/build

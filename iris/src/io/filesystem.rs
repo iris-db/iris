@@ -5,7 +5,7 @@ use std::{fs, io};
 
 pub const ROOT_PATH: &str = "iris";
 
-/// Initializes all of the directories for the source process.
+/// Initializes all of the directories for the iris process.
 pub fn prepare() {
 	for path in DatabasePath::iter() {
 		match fs::create_dir_all(path.path()) {

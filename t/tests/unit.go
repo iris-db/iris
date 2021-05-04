@@ -17,7 +17,7 @@ type unitTest struct {
 var (
 	unitTests = []unitTest{
 		{
-			Dir: "source",
+			Dir: "iris",
 			Exec: func(path string) error {
 				fmt.Println("Building project")
 				lib.StreamCmd("cargo", "+nightly", "build")
