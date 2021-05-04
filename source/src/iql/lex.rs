@@ -1,12 +1,12 @@
+use crate::graph::graph::Graph;
+use crate::io::page;
 use crate::lib::bson::JsonObject;
-use std::cmp;
+use serde::{Deserialize, Serialize};
+
+/// Represents a null JSON value.
+pub const NULL_VALUE: &str = "";
 
 /// An executable action that performs an operation on a graph.
-pub trait Command {
-	fn exec() -> String;
-}
-
-/// Command configuration.
 ///
 /// Example:
 /// ```
@@ -16,30 +16,44 @@ pub trait Command {
 /// $R | Format-Json
 /// Flush
 /// ```
-pub struct CommandConfig {
+pub trait Command<F, O>
+where
+	F: Serialize + Deserialize<'static>,
+	O: Serialize + Deserialize<'static>,
+{
 	/// Name of the command.
-	name: String,
-	/// Command flags.
-	flags: Vec<Flag>,
-	/// Expected fields to be returned by the operation. If the JSON array holding the results does
-	/// not match the expected fields, an error is thrown.
-	result_fields: Vec<JsonField>,
+	fn name() -> &'static str;
+	/// Executes the command.
+	fn exec(ctx: CommandContext, flags: F) -> CommandResult<O>;
 }
 
-/// A JSON key that is expected on a JSON object.
-/// `0` - The field name
-/// `1` - Is required field
-pub type JsonField = (String, bool);
+pub type CommandResult<O> = Result<CommandResultData<O>, CommandError>;
 
-/// A command argument.
-pub struct Flag {
-	name: String,
-	flag_type: FlagType,
-	required: bool,
+/// Error that occurs when executing a command.
+pub enum CommandError {
+	/// Improper flag type.
+	ImproperType(String),
+	/// Improper JSON string.
+	MalformedJson(String),
+	/// Could not write to the data page.
+	PageWriteError(page::WriteError),
 }
 
-/// A type of command flag.
-pub enum FlagType {
+impl From<page::WriteError> for CommandError {
+	fn from(e: page::WriteError) -> Self {
+		CommandError::PageWriteError(e)
+	}
+}
+
+/// The result of executing a command. It represents a set of rows returned from an operation.
+pub type CommandResultData<O> = Vec<O>;
+
+pub struct CommandContext<'a> {
+	pub graph: &'a mut Graph,
+}
+
+/// An Iris Query Language type.
+pub enum Type {
 	/// A string value.
 	///
 	/// `Command -Flag "String"`
@@ -63,24 +77,14 @@ pub enum FlagType {
 	Boolean,
 }
 
-/// The result of completing a command.
-pub struct CommandResult<'a> {
-	pub fields: &'a Vec<&'a str>,
-	pub data: &'a Vec<JsonObject>,
-}
-
-pub struct Pipe<'a> {
-	left: CommandResult<'a>,
-	right: CommandResult<'a>,
-}
-
 /// The amount of spaces used to separate a table column.
 const TABLE_COL_SPACING: u32 = 8;
 
 /// Formats a JSON object as a table.
-fn fmt_table(result: &CommandResult) -> String {
-	// Util functions.
-
+fn fmt_table<T>(result: &CommandResultData<T>) -> String
+where
+	T: Serialize,
+{
 	/// Calculates the spacing between a column.
 	///
 	/// * `cell_len` - The current cell length
@@ -101,19 +105,37 @@ fn fmt_table(result: &CommandResult) -> String {
 		o.get(key).unwrap().to_string()
 	}
 
-	//
-	// MAIN
-	//
+	let mut fields: Vec<&String> = Vec::new();
+	let mut data: Vec<JsonObject> = Vec::new();
 
-	let &CommandResult { data, fields } = result;
+	let mut json_result: CommandResultData<JsonObject> = Vec::new();
+
+	for r in result {
+		let o = serde_json::to_value(r)
+			.unwrap()
+			.as_object()
+			.unwrap()
+			.clone();
+		json_result.push(o);
+	}
+
+	for r in &json_result {
+		for k in r.keys() {
+			if !fields.contains(&k) {
+				fields.push(k);
+			}
+		}
+
+		data.push(r.clone());
+	}
 
 	let mut spacings: Vec<u32> = Vec::new();
 
 	// Search for largest item in column.
-	for f in fields {
+	for f in &fields {
 		let mut spacing = f.len() as u32;
 
-		for o in data {
+		for o in &data {
 			let str_len = get_as_str(o, f).len() as u32;
 
 			if str_len > spacing {
@@ -152,7 +174,7 @@ fn fmt_table(result: &CommandResult) -> String {
 		let mut row = "".to_string();
 
 		for (i, f) in fields.iter().enumerate() {
-			let data_str = get_as_str(o, f);
+			let data_str = get_as_str(&o, f);
 
 			let max_space = *spacings.get(i).unwrap();
 			let spacing = calc_spacing(data_str.len() as u32, max_space);
@@ -174,7 +196,7 @@ fn fmt_table(result: &CommandResult) -> String {
 mod tests {
 	use super::*;
 
-	use serde_json::{json, Value};
+	use serde_json::json;
 
 	#[test]
 	fn test_fmt_table() {
@@ -193,10 +215,7 @@ mod tests {
 				.clone(),
 		];
 
-		let res = fmt_table(&CommandResult {
-			fields: &vec!["RequestId", "NodeId", "Data", "Time"],
-			data: &json,
-		});
+		let res = fmt_table(&json);
 
 		/*
 		Should look like this...
@@ -215,9 +234,6 @@ RequestId        NodeId        Data                   Time
 1                32            {\"key\":\"value\"}        0
 2                353           {\"key\":\"value\"}        0\
 ";
-
-		println!("{}\n\n", expected);
-		println!("{}", res);
 
 		assert_eq!(res, expected);
 	}
