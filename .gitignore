@@ -6,8 +6,9 @@ iris/iris
 **/build
 **/dist
 
-# t
+# t and b
 t/__TEST_SCRIPT__
+buildScripts/__BUILD_SCRIPT__
 
 # IDE
 .idea
