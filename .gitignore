@@ -10,6 +10,9 @@ iris/iris
 t/__TEST_SCRIPT__
 buildScripts/__BUILD_SCRIPT__
 
+# shell
+shell/raw/cmake-build-debug
+
 # IDE
 .idea
 
