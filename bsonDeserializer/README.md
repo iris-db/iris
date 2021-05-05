@@ -1,0 +1,3 @@
+A deserializer for BSON strings with quote-less keys. For example...
+
+`{ hello: "world" }`
