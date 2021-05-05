@@ -1,9 +1,9 @@
-package tests
+package main
 
 import (
 	"errors"
 	"fmt"
-	"github.com/iris-db/iris/t/lib"
+	"github.com/iris-db/iris/x"
 	"os"
 	"strings"
 )
@@ -11,7 +11,7 @@ import (
 type unitTest struct {
 	Dir              string                  // Dir is the directory relative to the root project path.
 	Exec             func(path string) error // Exec executes the testing processes.
-	RequiredCommands []*lib.RequiredCommand  // RequiredCommands are the commands that are required to run the unit tests.
+	RequiredCommands []*x.RequiredCommand    // RequiredCommands are the commands that are required to run the unit tests.
 }
 
 var (
@@ -20,19 +20,19 @@ var (
 			Dir: "iris",
 			Exec: func(path string) error {
 				fmt.Println("Building project")
-				lib.StreamCmd("cargo", "+nightly", "build")
+				x.StreamCmd("cargo", "+nightly", "build")
 
 				fmt.Println("Running tests")
-				lib.StreamCmd("cargo", "+nightly", "test")
+				x.StreamCmd("cargo", "+nightly", "test")
 
 				return nil
 			},
-			RequiredCommands: []*lib.RequiredCommand{
-				lib.NewRequiredCommand("cargo"),
-				lib.NewRequiredCommand("rustup", lib.WithValidation(lib.CommandValidator{
+			RequiredCommands: []*x.RequiredCommand{
+				x.NewRequiredCommand("cargo"),
+				x.NewRequiredCommand("rustup", x.WithValidation(x.CommandValidator{
 					Error: errors.New("nightly toolchain is not installed. Please install it with: rustup install nightly"),
 					Validate: func(cmd string) bool {
-						toolchains := lib.ExecCmdStdout(cmd, "toolchain", "list")
+						toolchains := x.ExecCmdStdout(cmd, "toolchain", "list")
 						return strings.Contains(toolchains, "nightly")
 					},
 				})),
@@ -41,11 +41,11 @@ var (
 		{
 			Dir: "bson",
 			Exec: func(path string) error {
-				lib.StreamCmd("go", "test", "-v")
+				x.StreamCmd("go", "test", "-v")
 				return nil
 			},
-			RequiredCommands: []*lib.RequiredCommand{
-				lib.NewRequiredCommand("go"),
+			RequiredCommands: []*x.RequiredCommand{
+				x.NewRequiredCommand("go"),
 			},
 		},
 	}
@@ -63,9 +63,9 @@ func ExecUnitTests() {
 			}
 		}
 
-		lib.PrintDivider()
+		printDivider()
 		fmt.Printf("Running [%s] tests\n", t.Dir)
-		lib.PrintDivider()
+		printDivider()
 
 		path := fmt.Sprintf("../%s", t.Dir)
 
@@ -77,9 +77,9 @@ func ExecUnitTests() {
 			testErrors = append(testErrors, path)
 		}
 
-		lib.PrintDivider()
+		printDivider()
 		fmt.Printf("Completed [%s] tests\n", t.Dir)
-		lib.PrintDivider()
+		printDivider()
 
 		err = os.Chdir("../t")
 		if err != nil {
@@ -91,7 +91,7 @@ func ExecUnitTests() {
 		for _, p := range testErrors {
 			fmt.Printf("[%s] tests did not all pass successfully", p)
 		}
-		lib.ExitErr(errors.New("failing unit tests"))
+		x.ExitErr(errors.New("failing unit tests"))
 	}
 
 	fmt.Println("Unit tests successful")
