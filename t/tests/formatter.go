@@ -1,8 +1,8 @@
-package main
+package tests
 
 import "fmt"
 
 // printDivider prints a horizontal divider.
 func printDivider() {
-	fmt.Println("============================")
+	fmt.Println("==========================================")
 }

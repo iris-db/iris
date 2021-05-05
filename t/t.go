@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/iris-db/iris/t/tests"
 )
 
 type testConfig struct {
@@ -14,7 +15,7 @@ func main() {
 	c := readFlags()
 
 	if c.Unit {
-		ExecUnitTests()
+		tests.ExecUnitTests()
 	}
 }
 

@@ -1,4 +1,4 @@
-package main
+package tests
 
 import (
 	"errors"
@@ -39,7 +39,7 @@ var (
 			},
 		},
 		{
-			Dir: "bson",
+			Dir: "bsonDeserializer",
 			Exec: func(path string) error {
 				x.StreamCmd("go", "test", "-v")
 				return nil
