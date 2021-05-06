@@ -1,7 +1,7 @@
 #include <stdbool.h>
 
-#ifndef SHELL_KEY_READER_H
-#define SHELL_KEY_READER_H
+#ifndef RAW_TERMINAL_INPUT
+#define RAW_TERMINAL_INPUT
 
 inline int CtrlKey(char c);
 
@@ -17,4 +17,4 @@ void FlushStdout();
 
 bool CharEqual(char a, int code);
 
-#endif//SHELL_KEY_READER_H
+#endif//RAW_TERMINAL_INPUT
