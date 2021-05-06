@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <search.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
@@ -9,7 +8,7 @@
 
 struct termios orig;
 
-int CtrlKey(char c) {
+inline int CtrlKey(char c) {
 	return c & 0x1f;
 }
 
@@ -59,8 +58,4 @@ bool CharEqual(char a, int code) {
 
 void FlushStdout() {
 	fflush(stdout);
-}
-
-void PrintSL(char c) {
-	printf("%c", c);
 }
