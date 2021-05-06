@@ -14,9 +14,9 @@ type Terminal struct {
 }
 
 const (
-	NULL      = '\000'
-	ESCAPE    = 27
-	BACKSPACE = 127
+	null      = '\000'
+	escape    = 27
+	backspace = 127
 )
 
 // NewTerminal creates a new terminal.
@@ -35,11 +35,11 @@ func (t *Terminal) Start() {
 	cursor, writing, escaping := t.cursor, t.writing, t.escaping
 
 	for {
-		rc := C.char(NULL)
+		rc := C.char(null)
 
 		C.ReadBytes((*C.char)(&rc))
 
-		if rc == NULL {
+		if rc == null {
 			continue
 		}
 
@@ -49,7 +49,7 @@ func (t *Terminal) Start() {
 			cursor.PushChar(c)
 		}
 
-		if C.CharEqual(rc, BACKSPACE) {
+		if C.CharEqual(rc, backspace) {
 			l := 1
 			if escaping {
 				l = cursor.GetWordDeleteLength()
@@ -63,7 +63,7 @@ func (t *Terminal) Start() {
 
 		t.write(c)
 
-		escaping = bool(C.CharEqual(rc, ESCAPE))
+		escaping = bool(C.CharEqual(rc, escape))
 		if escaping {
 			continue
 		}
