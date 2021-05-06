@@ -4,13 +4,14 @@ package raw
 import "C"
 import (
 	"fmt"
+	"github.com/iris-db/iris/shell/view"
 )
 
 // Terminal is a raw terminal implementation.
 type Terminal struct {
 	writing  bool
 	escaping bool
-	cursor   *cursor
+	cursor   *view.Cursor
 }
 
 const (
@@ -24,7 +25,7 @@ func NewTerminal() *Terminal {
 	return &Terminal{
 		writing:  false,
 		escaping: false,
-		cursor:   newCursor(),
+		cursor:   view.NewCursor(),
 	}
 }
 

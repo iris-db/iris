@@ -1,24 +1,24 @@
-package raw
+package view
 
 import "fmt"
 
-// cursor keeps track of the current words on the STDIN line.
-type cursor struct {
+// Cursor keeps track of the current words on the STDIN line.
+type Cursor struct {
 	chars []string
 }
 
-// newCursor creates a new cursor.
-func newCursor() *cursor {
-	return &cursor{
+// NewCursor creates a new Cursor.
+func NewCursor() *Cursor {
+	return &Cursor{
 		chars: []string{},
 	}
 }
 
-func (c *cursor) PushChar(char string) {
+func (c *Cursor) PushChar(char string) {
 	c.chars = append(c.chars, char)
 }
 
-func (c *cursor) RemoveChar() {
+func (c *Cursor) RemoveChar() {
 	c.chars = c.chars[:len(c.chars)-1]
 }
 
@@ -31,11 +31,11 @@ const (
 	DOWN                  = "\033[;H"
 )
 
-func (c *cursor) Move(d cursorDirection) {
+func (c *Cursor) Move(d cursorDirection) {
 	fmt.Print(d)
 }
 
-func (c *cursor) GetWordDeleteLength() int {
+func (c *Cursor) GetWordDeleteLength() int {
 	var lens []int
 	var currentLen int
 

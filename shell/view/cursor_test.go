@@ -1,6 +1,9 @@
-package raw
+package view_test
 
-import "testing"
+import (
+	"github.com/iris-db/iris/shell/view"
+	"testing"
+)
 
 func TestCursor_PushChar(t *testing.T) {
 
@@ -20,7 +23,7 @@ func TestCursor_PushChar(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			c := newCursor()
+			c := view.NewCursor()
 
 			for _, char := range test.str {
 				c.PushChar(string(char))

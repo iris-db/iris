@@ -1,24 +1,7 @@
-package raw
-
-// Arrow is the code for an arrow keypress (unknown).
-const (
-	Null      = '\000'
-	Arrow     = 68
-	Backspace = 127
-)
-
-// Arrow directions.
-const (
-	Left  = 68
-	Right = 67
-	//D = 66
-	//U = 65
-)
+package view
 
 var (
-	DeleteWordSequence  = NewEscapeSequence(backspace)
-	LeftArrowSeqeuence  = NewEscapeSequence(Arrow, Left)
-	RightArrowSeqeuence = NewEscapeSequence(Arrow, Right)
+	DeleteWordSequence = NewEscapeSequence(Backspace)
 )
 
 // EscapeSequence represents a combination of characters pressed through an escape signal.
@@ -31,7 +14,7 @@ type EscapeSequence struct {
 
 // NewEscapeSequence creates a new EscapeSequence of the specified length.
 func NewEscapeSequence(sequence ...rune) *EscapeSequence {
-	return &EscapeSequence{sequence: append([]rune{escape}, sequence...)}
+	return &EscapeSequence{sequence: append([]rune{Escape}, sequence...)}
 }
 
 // Triggered returns true if the escape sequence was triggered.

@@ -51,7 +51,7 @@ var (
 		{
 			Dir: "shell",
 			Exec: func(path string) error {
-				x.StreamCmd("go", "test", "-v", "./raw")
+				x.StreamCmd("go", "test", "-v", "./view")
 				return nil
 			},
 			RequiredCommands: []*x.RequiredCommand{
