@@ -11,7 +11,7 @@ t/__TEST_SCRIPT__
 buildScripts/__BUILD_SCRIPT__
 
 # shell
-shell/raw/cmake-build-debug
+shell/__DEPRECATED/raw/cmake-build-debug
 
 # IDE
 .idea
