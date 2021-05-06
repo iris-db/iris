@@ -4,7 +4,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "key_reader.h"
+#include "raw_terminal_input.h"
 
 struct termios orig;
 

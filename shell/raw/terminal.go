@@ -1,6 +1,6 @@
 package raw
 
-// #include "key_reader.h"
+// #include "raw_terminal_input.h"
 import "C"
 import (
 	"fmt"
