@@ -31,9 +31,14 @@ func NewTerminal() *Terminal {
 
 // Start starts the terminal.
 func (t *Terminal) Start() {
-	C.EnableRawMode()
+	fmt.Println("Iris shell version v.4.2.0")
+	fmt.Println("connecting to iris://shard-cluster-00-00.xc523wc.iris")
+	fmt.Println("CONNPOOL Connected successfully to shard C-00-00")
+	fmt.Print("Iris Enterprise C-00-00:PRIMARY> ")
 
-	cursor, writing, escaping := t.cursor, t.writing, t.escaping
+	cursor, _, escaping := t.cursor, t.writing, t.escaping
+
+	C.EnableRawMode()
 
 	for {
 		rc := C.char(null)
@@ -44,11 +49,11 @@ func (t *Terminal) Start() {
 			continue
 		}
 
-		c := string(rune(int(rc)))
+		c := rune(int(rc))
 
-		if !writing {
-			cursor.PushChar(c)
-		}
+		cursor.PushChar(c)
+
+		fmt.Print(view.RightArrowSequence.Triggered())
 
 		if C.CharEqual(rc, backspace) {
 			l := 1
@@ -62,14 +67,22 @@ func (t *Terminal) Start() {
 			continue
 		}
 
-		t.write(c)
+		if C.CharEqual(rc, '\r') {
+			t.write("\r\n")
+			t.write("Iris Enterprise C-00-00:PRIMARY> ")
+			t.cursor.Reset()
+			continue
+		}
+
+		t.write(string(c))
 
 		escaping = bool(C.CharEqual(rc, escape))
 		if escaping {
 			continue
 		}
 
-		if C.CharEqual(rc, 13) {
+		if C.CharEqual(rc, 'q') {
+			fmt.Println()
 			break
 		}
 	}
@@ -77,14 +90,16 @@ func (t *Terminal) Start() {
 	C.DisableRawMode()
 }
 
-func (t *Terminal) write(c string) {
+func (t *Terminal) write(v ...interface{}) {
 	t.writing = true
-	fmt.Print(c)
+	fmt.Print(v...)
 	t.writing = false
 }
 
 // delete deletes a single char from the STDIN.
 func (t *Terminal) delete() {
-	t.write("\b \b")
-	t.cursor.RemoveChar()
+	if t.cursor.Pos() > 0 {
+		t.write("\b \b")
+		t.cursor.RemoveChar()
+	}
 }

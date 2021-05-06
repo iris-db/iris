@@ -2,6 +2,19 @@ package view
 
 var (
 	DeleteWordSequence = NewEscapeSequence(Backspace)
+
+	UpArrowSequence    = NewEscapeSequence(ArrowEscape, ArrowUp)
+	DownArrowSequence  = NewEscapeSequence(ArrowEscape, ArrowDown)
+	LeftArrowSequence  = NewEscapeSequence(ArrowEscape, ArrowLeft)
+	RightArrowSequence = NewEscapeSequence(ArrowEscape, ArrowRight)
+
+	Sequences = []*EscapeSequence{
+		DeleteWordSequence,
+		UpArrowSequence,
+		DownArrowSequence,
+		LeftArrowSequence,
+		RightArrowSequence,
+	}
 )
 
 // EscapeSequence represents a combination of characters pressed through an escape signal.
@@ -35,7 +48,6 @@ func (e *EscapeSequence) Triggered() bool {
 func (e *EscapeSequence) Read(c rune) {
 	if len(e.current) > len(e.sequence) {
 		e.current = nil
-		return
 	}
 	e.current = append(e.current, c)
 }

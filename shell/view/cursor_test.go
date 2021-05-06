@@ -26,7 +26,7 @@ func TestCursor_PushChar(t *testing.T) {
 			c := view.NewCursor()
 
 			for _, char := range test.str {
-				c.PushChar(string(char))
+				c.PushChar(char)
 			}
 
 			if got := c.GetWordDeleteLength(); got != test.want {
