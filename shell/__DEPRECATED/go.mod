@@ -1,4 +1,4 @@
-module github.com/iris-db/iris/shell
+module github.com/iris-db/iris/shell-deprecated
 
 go 1.16
 

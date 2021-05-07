@@ -4,7 +4,7 @@ package raw
 import "C"
 import (
 	"fmt"
-	"github.com/iris-db/iris/shell/view"
+	"github.com/iris-db/iris/shell-deprecated/view"
 )
 
 // Terminal is a raw terminal implementation.

@@ -1,7 +1,7 @@
 package view_test
 
 import (
-	"github.com/iris-db/iris/shell/view"
+	"github.com/iris-db/iris/shell-deprecated/view"
 	"testing"
 )
 
