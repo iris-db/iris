@@ -53,7 +53,16 @@ func (t *Terminal) Start() {
 
 		cursor.PushChar(c)
 
-		fmt.Print(view.RightArrowSequence.Triggered())
+		if view.LeftArrowSequence.Triggered() {
+			cursor.DecrementPos()
+			fmt.Print("\000\000")
+			continue
+		}
+
+		if view.RightArrowSequence.Triggered() {
+			cursor.IncrementPos()
+			continue
+		}
 
 		if C.CharEqual(rc, backspace) {
 			l := 1

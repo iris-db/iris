@@ -15,11 +15,24 @@ func NewCursor() *Cursor {
 }
 
 func (c *Cursor) PushChar(char rune) {
-	c.chars = append(c.chars, char)
-	c.pos += 1
 	for i := range Sequences {
 		Sequences[i].Read(char)
 	}
+
+	switch char {
+	case Backspace, Escape:
+		return
+	}
+	c.chars = append(c.chars, char)
+	c.pos += 1
+}
+
+func (c *Cursor) IncrementPos() {
+	c.pos += 1
+}
+
+func (c *Cursor) DecrementPos() {
+	c.pos += 1
 }
 
 func (c *Cursor) Reset() {
