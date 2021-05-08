@@ -1,3 +1,6 @@
+import sys
+
+
 class GetChar:
 	def __init__(self):
 		try:
@@ -36,4 +39,7 @@ class _GetCharWindows:
 
 	def __call__(self):
 		import msvcrt
-		return msvcrt.getch()
+		if sys.version_info[0] > 2:
+			return msvcrt.getwch()
+		else:
+			return msvcrt.getch()

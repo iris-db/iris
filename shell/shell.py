@@ -1,5 +1,6 @@
 import platform
 import sys
+import colorama
 
 from cross_platform_getch import GetChar
 
@@ -9,23 +10,25 @@ getch = GetChar()
 
 if system == "Linux" or system == "Darwin":
 	def get_key():
-		first_char = getch()
+		c1 = getch()
 
-		if first_char == "\x1b":
-			next_char = getch()
-			if next_char == 127:
+		if c1 == "\x1b":
+			c2 = getch()
+			if c2 == 127:
 				return "CMD_BACKSPACE"
 			else:
-				return {"[A": "up", "[B": "down", "[C": "right", "[D": "left"}[next_char + getch()]
+				return {"[A": "up", "[B": "down", "[C": "right", "[D": "left"}[c2 + getch()]
 		else:
-			return first_char
+			return c1
 elif system == "Windows":
 	def get_key():
-		first_char = getch()
-		if first_char == b"\xe0":
-			return {"H": "up", "P": "down", "M": "right", "K": "left"}[getch()]
+		c1 = getch()
+		if c1 in ("\x00", "\xe0"):
+			arrows = {"H": "up", "P": "down", "M": "right", "K": "left"}
+			c2 = getch()
+			return arrows.get(c2, c1 + c2)
 		else:
-			return first_char
+			return c1
 else:
 	print(f"Could not start shell. Unsupported platform {system}")
 	exit(1)
@@ -37,6 +40,8 @@ def ctrl_key(key):
 
 
 def main():
+	colorama.init()
+
 	prompt = ""
 
 	min_index = len(prompt)
@@ -65,9 +70,9 @@ def main():
 				current_line = current_line[:index - 1] + current_line[index:]
 				index = max(0, index - 1)
 			elif code in {10, 13}:
-				sys.stdout.write("\33[2K\r")
+				sys.stdout.write("\n")
 
-				print("\n", current_line)
+				print(current_line)
 
 				current_line = ""
 				index = min_index
