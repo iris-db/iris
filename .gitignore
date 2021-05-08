@@ -11,7 +11,7 @@ t/__TEST_SCRIPT__
 buildScripts/__BUILD_SCRIPT__
 
 # shell
-shell/__DEPRECATED/raw/cmake-build-debug
+shell/venv
 
 # IDE
 .idea
