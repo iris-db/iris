@@ -3,24 +3,29 @@ import sys
 import colorama
 
 from cross_platform_getch import GetChar
+import tcp
 
 system = platform.system()
 
 getch = GetChar()
 
 if system == "Linux" or system == "Darwin":
+	BACKSPACE_CODE = 127
+
 	def get_key():
 		c1 = getch()
 
 		if c1 == "\x1b":
 			c2 = getch()
-			if c2 == 127:
+			if c2 == BACKSPACE_CODE:
 				return "CMD_BACKSPACE"
 			else:
 				return {"[A": "up", "[B": "down", "[C": "right", "[D": "left"}[c2 + getch()]
 		else:
 			return c1
 elif system == "Windows":
+	BACKSPACE_CODE = 8
+
 	def get_key():
 		c1 = getch()
 		if c1 in ("\x00", "\xe0"):
@@ -41,7 +46,6 @@ def ctrl_key(key):
 
 def main():
 	colorama.init()
-
 	prompt = ""
 
 	min_index = len(prompt)
@@ -66,7 +70,7 @@ def main():
 			elif 32 <= code <= 126:
 				current_line = current_line[:index] + chr(code) + current_line[index:]
 				index += 1
-			elif code == 127:
+			elif code == BACKSPACE_CODE:
 				current_line = current_line[:index - 1] + current_line[index:]
 				index = max(0, index - 1)
 			elif code in {10, 13}:
@@ -96,4 +100,6 @@ def main():
 
 
 if __name__ == "__main__":
-	main()
+	tcp.connect_to_server()
+	pass
+	# main()
