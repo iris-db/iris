@@ -18,6 +18,7 @@ rocket = "0.4.7"
 ctor = "0.1.20"
 chrono = "0.4.19"
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
+popol = "0.4.0"
 
 [build-dependencies]
 bindgen = "0.53.1"

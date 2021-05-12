@@ -1,3 +1,5 @@
+use crate::log::logger;
+use crate::log::logger::LogSeverity;
 use std::io;
 use std::io::{Read, Write};
 use std::net::{Shutdown, TcpListener, TcpStream};
@@ -7,11 +9,16 @@ pub fn start() {
 
 	let addr = format!("127.0.0.1:{}", port);
 
-	let listener = TcpListener::bind(addr).unwrap();
+	let listener = TcpListener::bind(&*addr).unwrap();
 
 	listener
 		.set_nonblocking(true)
 		.expect("Cannot set non-blocking");
+
+	logger::b_log(
+		LogSeverity::Info,
+		&*format!("TCP server started at {}", &*addr),
+	);
 
 	for stream in listener.incoming() {
 		match stream {
@@ -30,7 +37,8 @@ fn handle_connection(mut stream: TcpStream) {
 			stream.write(&data[0..size]).unwrap();
 			true
 		}
-		Err(_) => {
+		Err(e) => {
+			println!("{}", e);
 			println!(
 				"An error occurred, terminating connection with {}",
 				stream.peer_addr().unwrap()

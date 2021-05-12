@@ -6,7 +6,11 @@
 extern crate rocket;
 
 use crate::io::filesystem;
+use crate::io::filesystem::DatabasePath;
+use crate::log::logger;
+use crate::log::logger::LogSeverity::Info;
 use crate::server::tcp;
+use std::env;
 
 #[allow(warnings, unused)]
 mod generated;
@@ -20,7 +24,25 @@ mod server;
 mod test_lifecycle;
 
 fn main() {
+	logger::b_log(Info, "Starting IrisDB Community Edition");
+
+	logger::b_log(Info, "Preparing filesystem");
 	filesystem::prepare();
-	// http::server::start();
+
+	for dir in DatabasePath::paths() {
+		logger::b_log(
+			Info,
+			&*format!(
+				"Using directory {}/{}",
+				env::current_dir().unwrap().to_str().unwrap(),
+				dir.path()
+			),
+		);
+	}
+
+	logger::b_log(Info, "Connecting to cluster nodes...");
+	logger::b_log(Info, "Cluster statistics: 1 connected node");
+
+	logger::b_log(Info, "Starting TCP server");
 	tcp::server::start();
 }

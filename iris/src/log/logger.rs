@@ -21,9 +21,9 @@ struct Log {
 }
 
 /// The severity of an event.
-enum LogSeverity {
-	/// Successful operation.
-	Ok,
+pub enum LogSeverity {
+	/// Information message.
+	Info,
 	/// Warning.
 	Warn,
 	/// A recoverable error occurred.
@@ -32,6 +32,19 @@ enum LogSeverity {
 	Critical,
 	/// An error that crashes the database.
 	Fatal,
+}
+
+impl ToString for LogSeverity {
+	fn to_string(&self) -> String {
+		return match self {
+			LogSeverity::Info => "INFO",
+			LogSeverity::Warn => "WARN",
+			LogSeverity::Error => "ERROR",
+			LogSeverity::Critical => "CRITICAL",
+			LogSeverity::Fatal => "FATAL",
+		}
+		.to_string();
+	}
 }
 
 impl Log {
@@ -66,15 +79,18 @@ pub struct SLogResult {
 	pub time: String,
 }
 
-/// Prints a log message to STDOUT.
+/// Prints a log to message to STDOUT without writing to the filesystem.
+pub fn b_log(severity: LogSeverity, msg: &str) {
+	println!("{}", s_log(severity, msg).msg);
+}
+
+/// Formats a log message.
 ///
-/// Returns current time (ISO-8106) as string
-pub fn s_log(msg: &str) -> SLogResult {
+/// Returns the formatted message and current time (ISO-8106) as string.
+pub fn s_log(severity: LogSeverity, msg: &str) -> SLogResult {
 	let time = current_time();
 
-	let msg = format!("{} {}", time, msg);
-
-	println!("{}", msg);
+	let msg = format!("{} {} {}", time, severity.to_string(), msg);
 
 	SLogResult { msg, time }
 }
@@ -82,8 +98,8 @@ pub fn s_log(msg: &str) -> SLogResult {
 /// A standard log message.
 ///
 /// Each log function will print its contents to STDOUT and save it to the current log file.
-pub fn log(msg: &str, session_id: Option<Uuid>, data: Option<JsonObject>) {
-	let SLogResult { time, .. } = s_log(msg);
+pub fn log(severity: LogSeverity, msg: &str, session_id: Option<Uuid>, data: Option<JsonObject>) {
+	let SLogResult { time, .. } = s_log(severity, msg);
 
 	let log_file = match current_log_file() {
 		Ok(file) => file,
@@ -145,7 +161,7 @@ mod tests {
 	fn test_s_log() {
 		let msg = "CONNPOOL Connecting to shard C-00-00";
 
-		log(msg, None, None);
+		log(LogSeverity::Info, msg, None, None);
 
 		assert!(Path::new(&*DatabasePath::Logs.file("LOGF")).exists())
 	}

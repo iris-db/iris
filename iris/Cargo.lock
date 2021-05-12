@@ -903,6 +903,7 @@ dependencies = [
  "encoding_rs_io",
  "futures",
  "hyper 0.14.7",
+ "popol",
  "rocket",
  "rocket_contrib",
  "serde",
@@ -1285,6 +1286,15 @@ dependencies = [
  "cpuid-bool 0.2.0",
  "opaque-debug",
  "universal-hash",
+]
+
+[[package]]
+name = "popol"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9cc2432bf292365c81ff3f4cdee30d38c670ecca65698f5693aaf51ec2a5a2d"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

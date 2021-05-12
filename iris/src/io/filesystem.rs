@@ -7,15 +7,13 @@ pub const ROOT_PATH: &str = "iris";
 
 /// Initializes all of the directories for the iris process.
 pub fn prepare() {
-	for path in DatabasePath::iter() {
+	for path in DatabasePath::paths() {
 		match fs::create_dir_all(path.path()) {
 			Err(e) => panic!("{}", e),
 			_ => {}
 		}
 	}
 }
-
-pub fn destroy() {}
 
 /// Database storage paths.
 pub enum DatabasePath {
@@ -29,7 +27,7 @@ pub enum DatabasePath {
 
 impl DatabasePath {
 	/// Returns an iterator of each path.
-	pub fn iter() -> Iter<'static, DatabasePath> {
+	pub fn paths() -> Iter<'static, DatabasePath> {
 		use DatabasePath::*;
 
 		static PATHS: [DatabasePath; 3] = [Data, Temp, Logs];
