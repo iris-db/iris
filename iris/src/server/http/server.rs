@@ -1,16 +1,15 @@
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 
 use rocket::config::{Environment, LoggingLevel};
 use rocket::{Config, State};
 use rocket_contrib::json::Json;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::graph::database::Database;
-use crate::graph::node::Node;
-use crate::lib::bson::JsonObject;
+use crate::graph::graph::Graph;
 use crate::server::http::errors;
 
-type RouteContext<'a> = State<'a, Mutex<Database>>;
+pub type RouteContext<'a> = State<'a, Mutex<Database>>;
 
 /// Starts the REST api.
 pub fn start() {
@@ -31,44 +30,21 @@ ClusterConnections: 1"
 		.unwrap();
 
 	rocket::custom(config)
-		.mount("/", routes![insert_node])
+		.mount("/", routes![])
 		.manage(Mutex::new(db))
 		.launch();
 }
 
-#[post("/graphs/<name>/_node", data = "<body>")]
-fn insert_node(name: String, body: Json<Vec<JsonObject>>, ctx: RouteContext) -> Json<Value> {
-	let mut ctx = ctx.inner().lock().unwrap();
+pub fn extract_graph<'a>(
+	mut db: MutexGuard<'a, Database>,
+	graph_name: &str,
+) -> Result<&'a mut Box<Graph>, Json<Value>> {
+	let graphs = db.graphs();
 
-	let graphs = ctx.graphs();
+	let graph = graphs.get_mut(graph_name);
 
-	let graph = graphs.get_mut(&*name);
-
-	let mut total_time: u64 = 0;
-
-	let graph = match graph {
-		Some(graph) => graph,
-		None => return errors::graph_not_found(name),
+	return match graph {
+		Some(graph) => Ok(graph),
+		None => Err(errors::graph_not_found(graph_name)),
 	};
-
-	let data = body.0;
-	for req in &data {
-		let id = graph.next_id();
-
-		let data = req.get("data");
-		let data = match data {
-			Some(value) => Some(value.clone()),
-			None => None,
-		};
-
-		// let insert_time = graph.insert(Node::new(id, data, None))?;
-		// total_time += insert_time;
-	}
-
-	let count = data.len();
-
-	Json(json!({
-	  "time": total_time,
-	  "count": count
-	}))
 }
