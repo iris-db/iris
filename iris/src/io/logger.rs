@@ -41,6 +41,32 @@ impl ToString for EventSeverity {
 	}
 }
 
+/// The category of a log.
+pub enum EventCategory {
+	/// General event.
+	General,
+	/// Network event.
+	Network,
+	/// Disk event.
+	Filesystem,
+	/// Connection pool event.
+	ConnPool,
+}
+
+const LARGEST_CATEGORY_LEN: u32 = 10;
+
+impl ToString for EventCategory {
+	fn to_string(&self) -> String {
+		return match self {
+			EventCategory::General => "GENERAL",
+			EventCategory::Network => "NETWORK",
+			EventCategory::Filesystem => "FILESYSTEM",
+			EventCategory::ConnPool => "CONNPOOL",
+		}
+		.to_string();
+	}
+}
+
 impl Event {
 	/// Creates a new event with the current time.
 	fn now(severity: EventSeverity, data: String, server_id: String) -> Event {
@@ -67,22 +93,38 @@ impl Event {
 pub fn f_log_e(e: Event) {}
 
 /// Writes a message to STDOUT in log message format.
-pub fn s_log(severity: EventSeverity, msg: &str) {
-	println!("{}", fmt_log_msg(util::current_time(), severity, msg));
+pub fn s_log(severity: EventSeverity, category: EventCategory, msg: &str) {
+	println!(
+		"{}",
+		fmt_log_msg(util::current_time(), severity, category, msg)
+	);
 }
 
 mod util {
-	use crate::io::logger::EventSeverity;
+	use crate::io::logger::{EventCategory, EventSeverity, LARGEST_CATEGORY_LEN};
 	use chrono::{DateTime, Utc};
 	use std::time::SystemTime;
 
 	/// Prepends the current time to a string.
-	pub fn fmt_log_msg(time: String, severity: EventSeverity, msg: &str) -> String {
+	pub fn fmt_log_msg(
+		time: String,
+		severity: EventSeverity,
+		category: EventCategory,
+		msg: &str,
+	) -> String {
+		let mut spacing = "".to_string();
+
+		for _ in 0..LARGEST_CATEGORY_LEN as usize - category.to_string().len() {
+			spacing.push_str(" ");
+		}
+
 		format!(
-			"{} {} {}",
+			"{} {}  {}  {}{}",
 			time,
 			// First character of the severity level.
 			severity.to_string().chars().next().unwrap(),
+			category.to_string(),
+			spacing,
 			msg
 		)
 	}
@@ -92,5 +134,18 @@ mod util {
 		let st = SystemTime::now();
 		let dt: DateTime<Utc> = st.clone().into();
 		format!("{}", dt.format("%+"))
+	}
+
+	#[cfg(test)]
+	mod test {
+		use super::*;
+		use crate::io::logger::EventCategory::General;
+		use crate::io::logger::EventSeverity::Info;
+
+		#[test]
+		pub fn test_fmt_log_msg() {
+			let msg = fmt_log_msg("ABC".to_string(), Info, General, "Hello world!");
+			assert_eq!("ABC I  GENERAL     Hello world!", msg);
+		}
 	}
 }
