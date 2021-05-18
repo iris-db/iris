@@ -2,9 +2,10 @@ use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
-use crate::graph::edge::Edge;
+use crate::database::edge::Edge;
 use crate::io::page::PageSerializable;
-use crate::lib::bson::{encode, JsonObject};
+use crate::lib::bson_encoder::encode;
+use crate::lib::json::JsonObject;
 use serde_json::Value;
 
 /// Create a node from a BSON string and edges.

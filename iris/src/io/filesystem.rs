@@ -76,9 +76,3 @@ impl DatabasePath {
 		};
 	}
 }
-
-#[cfg(tests)]
-mod tests {
-	#[test]
-	fn test_write() {}
-}

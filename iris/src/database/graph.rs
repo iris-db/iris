@@ -1,14 +1,15 @@
 extern crate test;
 
-use serde::{Deserialize, Serialize};
-
-use crate::graph::node::Node;
-use crate::io::page;
-use crate::io::page::MAX_PAGE_SIZE;
-use crate::lib::bson::JsonObject;
-use crate::lib::uid::IntCursor;
 use std::fs::OpenOptions;
 use std::time::Instant;
+
+use serde::{Deserialize, Serialize};
+
+use crate::database::node::Node;
+use crate::database::uid::IntCursor;
+use crate::io::page;
+use crate::io::page::MAX_PAGE_SIZE;
+use crate::lib::json::JsonObject;
 
 /// A collection of graph nodes.
 pub struct Graph {
@@ -24,23 +25,6 @@ pub struct Graph {
 	page_pos: u32,
 }
 
-/// Result of a crud operation.
-#[derive(Serialize, Deserialize)]
-pub struct CrudOperationMetadata {
-	pub count: u32,
-	pub time: u32,
-}
-
-impl From<CrudOperationMetadata> for JsonObject {
-	fn from(meta: CrudOperationMetadata) -> Self {
-		serde_json::to_value(meta)
-			.unwrap()
-			.as_object()
-			.unwrap()
-			.clone()
-	}
-}
-
 impl Graph {
 	/// Creates a new graph along and initializes a page.
 	pub fn new(name: &str) -> Result<Graph, page::WriteError> {
@@ -54,7 +38,7 @@ impl Graph {
 		})
 	}
 
-	/// Next available node id
+	/// Next available node id.
 	pub fn next_id(&mut self) -> u64 {
 		self.cursor.next()
 	}
@@ -63,7 +47,6 @@ impl Graph {
 /// The time it takes to complete an operation in milliseconds.
 type OperationTime = u128;
 
-// Crud operations.
 impl Graph {
 	/// Inserts a node into the graph.
 	pub fn insert(&mut self, node: Node) -> Result<OperationTime, page::WriteError> {

@@ -1,90 +1,13 @@
-use crate::graph::graph::Graph;
-use crate::io::page;
-use crate::lib::bson::JsonObject;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use serde_json::{Map, Value};
 
-/// Represents a null JSON value.
-pub const NULL_VALUE: &str = "";
-
-/// An executable action that performs an operation on a graph.
-///
-/// Example:
-/// ```
-/// $A = Insert -Group "User"
-/// $B = Insert -Group "User"
-/// $R = Relate -Name "IS_FRIENDS_WITH" -From $A -To $B
-/// $R | Format-Json
-/// Flush
-/// ```
-pub trait Command<F, O>
-where
-	F: Serialize + Deserialize<'static>,
-	O: Serialize + Deserialize<'static>,
-{
-	/// Name of the command.
-	fn name() -> &'static str;
-	/// Executes the command.
-	fn exec(ctx: CommandContext, flags: F) -> CommandResult<O>;
-}
-
-pub type CommandResult<O> = Result<CommandResultData<O>, CommandError>;
-
-/// Error that occurs when executing a command.
-pub enum CommandError {
-	/// Improper flag type.
-	ImproperType(String),
-	/// Improper JSON string.
-	MalformedJson(String),
-	/// Could not write to the data page.
-	PageWriteError(page::WriteError),
-}
-
-impl From<page::WriteError> for CommandError {
-	fn from(e: page::WriteError) -> Self {
-		CommandError::PageWriteError(e)
-	}
-}
-
-/// The result of executing a command. It represents a set of rows returned from an operation.
-pub type CommandResultData<O> = Vec<O>;
-
-pub struct CommandContext<'a> {
-	pub graph: &'a mut Graph,
-}
-
-/// An Iris Query Language value.
-pub enum IqlValue {
-	/// A string value.
-	///
-	/// `Command -Flag "String"`
-	String(String),
-	/// An array of strings. Strings are separated by a comma and the array ends when there is a
-	/// whitespace.
-	///
-	/// `Command -Flag "A","B","C"`
-	Array(Vec<String>),
-	/// A valid JSON string. Can have quotes or be quote-less. The JSON string must be surrounded by
-	/// single quotes.
-	///
-	/// `Command -Flag '{ key: "value" }'`
-	/// `Command -Flag '{ "key": "value" }'`
-	Json(String),
-	/// A numerical value.
-	///
-	/// `Command -Flag 12 -Flag2 13.52`
-	Number(f64),
-	/// Boolean value.
-	Boolean,
-}
+pub type JsonObject = Map<String, Value>;
 
 /// The amount of spaces used to separate a table column.
 const TABLE_COL_SPACING: u32 = 8;
 
 /// Formats a JSON object as a table.
-fn fmt_table<T>(result: &CommandResultData<T>) -> String
-where
-	T: Serialize,
-{
+pub fn fmt_table(result: &Vec<JsonObject>) -> String {
 	/// Calculates the spacing between a column.
 	///
 	/// * `cell_len` - The current cell length
@@ -108,18 +31,7 @@ where
 	let mut fields: Vec<&String> = Vec::new();
 	let mut data: Vec<JsonObject> = Vec::new();
 
-	let mut json_result: CommandResultData<JsonObject> = Vec::new();
-
 	for r in result {
-		let o = serde_json::to_value(r)
-			.unwrap()
-			.as_object()
-			.unwrap()
-			.clone();
-		json_result.push(o);
-	}
-
-	for r in &json_result {
 		for k in r.keys() {
 			if !fields.contains(&k) {
 				fields.push(k);

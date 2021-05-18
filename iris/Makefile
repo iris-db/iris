@@ -1,7 +1,9 @@
 .PHONY: all
 
-BSON_PATH = ../bson
+BSON_PATH = ../bsonDeserializer
 STATIC_C_LIB_PATH = build
+
+SHELL = /bin/bash
 
 TOOLCHAINS = +nightly
 

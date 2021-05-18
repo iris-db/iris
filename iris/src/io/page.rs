@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, Cursor, Error, Write};
+use std::path::{Path, PathBuf};
 use std::string::FromUtf8Error;
 use std::{fs, io};
 
 use bson::{Bson, Document};
 
 use crate::io::filesystem::DatabasePath;
-use crate::lib::bson::JsonObject;
-use std::path::{Path, PathBuf};
+use crate::lib::json::JsonObject;
 
 /// The maximum amount of data that is able to fit on a single page.
 ///
@@ -308,7 +308,7 @@ mod tests {
 	use serde_json::{json, Value};
 
 	use super::*;
-	use crate::lib::bson::encode;
+	use crate::lib::bson_encoder::encode;
 
 	/// Serializable struct for testing.
 	struct IdWrapper {
