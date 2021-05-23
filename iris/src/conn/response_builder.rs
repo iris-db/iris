@@ -1,7 +1,11 @@
 use crate::lib::json::JsonObject;
 use rocket::http::{ContentType, Status};
-use rocket::Response;
+use rocket::request::{FromRequest, Outcome};
+use rocket::{Request, Response};
+use serde_json::json;
 use std::io::Cursor;
+
+pub const DEFAULT_RESPONSE_FORMAT: ResponseFormat = ResponseFormat::Table;
 
 /// REST API response type.
 pub enum ResponseFormat {
@@ -9,6 +13,29 @@ pub enum ResponseFormat {
 	Table,
 	/// JSON object.
 	JSON,
+}
+
+impl From<&str> for ResponseFormat {
+	fn from(s: &str) -> Self {
+		return match s {
+			"table" => Self::Table,
+			"json" => Self::JSON,
+			_ => DEFAULT_RESPONSE_FORMAT,
+		};
+	}
+}
+
+impl FromRequest<'_, '_> for ResponseFormat {
+	type Error = ();
+
+	fn from_request(request: &Request<'_>) -> Outcome<Self, Self::Error> {
+		let keys: Vec<_> = request.headers().get("x-response-format").collect();
+		if keys.len() != 1 {
+			return Outcome::Success(DEFAULT_RESPONSE_FORMAT);
+		}
+
+		Outcome::Success(ResponseFormat::from(&*keys[0].to_lowercase()))
+	}
 }
 
 impl From<ResponseFormat> for ContentType {
@@ -46,18 +73,15 @@ pub fn new_response<'a>(format: ResponseFormat, status: Status, data: String) ->
 	build_response(ContentType::from(format), data, status)
 }
 
-/// Builds an API error response in JSON format.
-pub fn new_json_error<'a>(
-	format: ResponseFormat,
-	status: Status,
-	msg: &str,
-	data: &JsonObject,
-) -> Response<'a> {
-	build_response(
-		ContentType::from(format),
-		serde_json::to_string(data).unwrap_or("{}".into()),
-		status,
-	)
+/// Builds an API error object.
+pub fn json_error_object(msg: &str, data: &JsonObject) -> JsonObject {
+	json!({
+		"Message": msg,
+		"Data": data
+	})
+	.as_object()
+	.unwrap()
+	.clone()
 }
 
 /// Builds a response from a content type header, a sized body, and a status code.
