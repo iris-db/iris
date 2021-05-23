@@ -1,4 +1,3 @@
-use serde::Serialize;
 use serde_json::{Map, Value};
 
 pub type JsonObject = Map<String, Value>;
@@ -101,7 +100,7 @@ pub fn fmt_table(result: &Vec<JsonObject>) -> String {
 		rows.push(row);
 	}
 
-	format!("{}\n{}\n{}", header, divider, rows.join("\n"))
+	format!("{}\n{}\n{}\n", header, divider, rows.join("\n"))
 }
 
 #[cfg(test)]
