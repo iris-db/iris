@@ -7,6 +7,29 @@ use std::io::Cursor;
 
 pub const DEFAULT_RESPONSE_FORMAT: ResponseFormat = ResponseFormat::Table;
 
+/// A REST api response.
+///
+/// * `0` - The response status
+/// * `1` - The response body
+pub struct ApiResponse<'a>(Status, &'a Vec<u8>);
+
+impl<'a> ApiResponse<'a> {
+	/// Creates a raw ApiResponse.
+	pub fn new(status: Status, body: &'a Vec<u8>) -> Self {
+		Self(status, body)
+	}
+
+	/// Marshals an API response into a Rocket response.
+	pub fn marshal(&self, fmt: ResponseFormat) -> Response<'a> {
+		Response::build()
+			.header(ContentType::from(fmt))
+			.sized_body(Cursor::new(self.1))
+			.status(self.0)
+			.ok::<()>()
+			.unwrap()
+	}
+}
+
 /// REST API response type.
 pub enum ResponseFormat {
 	/// A plaintext table for CLI usage.
