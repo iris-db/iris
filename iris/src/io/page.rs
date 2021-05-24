@@ -181,7 +181,8 @@ impl Header {
 	/// Attempts to unmarshal an integer value from a key-value pair, defaulting to zero if it is not
 	/// present.
 	fn get_int(key: &str, map: &HashMap<String, String>) -> u64 {
-		map.get(key)
+		map
+			.get(key)
 			.unwrap_or(&"0".to_string())
 			.parse()
 			.unwrap_or(0)
@@ -280,7 +281,8 @@ where
 
 	let mut fin: Vec<ReadObjectResult<S>> = Vec::new();
 
-	acc.into_iter()
+	acc
+		.into_iter()
 		.map(|read| {
 			(
 				Bson::from(read.0)
@@ -376,17 +378,17 @@ mod tests {
 	#[test]
 	fn test_read_contents() {
 		let object_a = json!(
-		  {
+			{
 			"firstName": "John",
 			"lastName": "Smith"
-		  }
+			}
 		);
 
 		let object_b = json!(
-		  {
+			{
 			"firstName": "Bobby",
 			"lastName": "Brown"
-		  }
+			}
 		);
 
 		/// Converts a JSON object into a document.
@@ -394,7 +396,8 @@ mod tests {
 			let mut buf = Vec::new();
 
 			Document::try_from(
-				val.as_object()
+				val
+					.as_object()
 					.expect("Could not convert to JsonObject")
 					.clone(),
 			)

@@ -3,13 +3,9 @@ extern crate test;
 use std::fs::OpenOptions;
 use std::time::Instant;
 
-use serde::{Deserialize, Serialize};
-
 use crate::database::node::Node;
 use crate::database::uid::IntCursor;
 use crate::io::page;
-use crate::io::page::MAX_PAGE_SIZE;
-use crate::lib::json::JsonObject;
 
 /// A collection of graph nodes.
 pub struct Graph {
