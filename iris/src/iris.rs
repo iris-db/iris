@@ -49,9 +49,9 @@ fn main() {
 		&*format!(
 			"[Connection-Info] {}",
 			json!({
-				"InstanceId": rand::thread_rng().gen_range(0..u16::MAX),
-				"Port": 12712,
-				"ShardCount": 0
+				"instanceId": rand::thread_rng().gen_range(0..u16::MAX),
+				"port": 12712,
+				"shardCount": 0
 			})
 			.to_string()
 		),

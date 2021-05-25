@@ -84,7 +84,7 @@ fn graph_query(
 
 	let body = Value::from(body.into_inner());
 
-	let query = &body["Query"];
+	let query = &body["query"];
 	if query.is_null() || !query.is_array() {
 		let res = fmt_table(&vec![response_builder::json_error_object(
 			"Expected an array for Query",
@@ -95,7 +95,7 @@ fn graph_query(
 
 	let graph: Option<&mut Graph>;
 
-	let graph_key = &body["Graph"];
+	let graph_key = &body["graph"];
 	if !graph_key.is_null() {
 		if !graph_key.is_string() {
 			let res = fmt_table(&vec![response_builder::json_error_object(
@@ -112,7 +112,7 @@ fn graph_query(
 
 	let mut return_stmt = "*";
 
-	let return_stmt_key = &body["Return"];
+	let return_stmt_key = &body["return"];
 	if !return_stmt_key.is_null() {
 		if !return_stmt_key.is_string() {
 			let res = fmt_table(&vec![response_builder::json_error_object(
