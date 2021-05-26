@@ -1,6 +1,20 @@
+use crate::conn::response_builder::ResponseFormat;
 use serde_json::{Map, Value};
 
 pub type JsonObject = Map<String, Value>;
+
+/// Represents a a raw BSON document.
+pub struct RawBson<'a>(&'a Vec<u8>);
+
+impl RawBson<'_> {
+	/// Converts the raw BSON into a human readable string based on a ResponseFormat.
+	pub fn marshal(&self, fmt: ResponseFormat) -> String {
+		return match fmt {
+			ResponseFormat::Table => "".to_string(),
+			ResponseFormat::JSON => "".to_string(),
+		};
+	}
+}
 
 /// The amount of spaces used to separate a table column.
 const TABLE_COL_SPACING: u32 = 8;
@@ -143,7 +157,7 @@ RequestId        NodeId        Data                   Time
 ---------        ------        ----                   ----
 0                12            {\"key\":\"value\"}        0
 1                32            {\"key\":\"value\"}        0
-2                353           {\"key\":\"value\"}        0\
+2                353           {\"key\":\"value\"}        0
 ";
 
 		assert_eq!(res, expected);
