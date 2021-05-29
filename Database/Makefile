@@ -1,6 +1,6 @@
 .PHONY: all
 
-BSON_PATH = ../bsonDeserializer
+BSON_PATH = ../BsonDeserialization
 STATIC_C_LIB_PATH = build
 
 SHELL = /bin/bash
