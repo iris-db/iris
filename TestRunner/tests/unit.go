@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/iris-db/iris/x"
 	"os"
-	"strings"
 )
 
 type unitTest struct {
@@ -16,30 +15,30 @@ type unitTest struct {
 
 var (
 	unitTests = []unitTest{
+// 		{
+// 			Dir: "Database",
+// 			Exec: func(path string) error {
+// 				fmt.Println("Building project")
+// 				x.StreamCmd("cargo", "+nightly", "build")
+//
+// 				fmt.Println("Running tests")
+// 				x.StreamCmd("cargo", "+nightly", "test")
+//
+// 				return nil
+// 			},
+// 			RequiredCommands: []*x.RequiredCommand{
+// 				x.NewRequiredCommand("cargo"),
+// 				x.NewRequiredCommand("rustup", x.WithValidation(x.CommandValidator{
+// 					Error: errors.New("nightly toolchain is not installed. Please install it with: rustup install nightly"),
+// 					Validate: func(cmd string) bool {
+// 						toolchains := x.ExecCmdStdout(cmd, "toolchain", "list")
+// 						return strings.Contains(toolchains, "nightly")
+// 					},
+// 				})),
+// 			},
+// 		},
 		{
-			Dir: "iris",
-			Exec: func(path string) error {
-				fmt.Println("Building project")
-				x.StreamCmd("cargo", "+nightly", "build")
-
-				fmt.Println("Running tests")
-				x.StreamCmd("cargo", "+nightly", "test")
-
-				return nil
-			},
-			RequiredCommands: []*x.RequiredCommand{
-				x.NewRequiredCommand("cargo"),
-				x.NewRequiredCommand("rustup", x.WithValidation(x.CommandValidator{
-					Error: errors.New("nightly toolchain is not installed. Please install it with: rustup install nightly"),
-					Validate: func(cmd string) bool {
-						toolchains := x.ExecCmdStdout(cmd, "toolchain", "list")
-						return strings.Contains(toolchains, "nightly")
-					},
-				})),
-			},
-		},
-		{
-			Dir: "bsonDeserializer",
+			Dir: "BsonDeserialization",
 			Exec: func(path string) error {
 				x.StreamCmd("go", "test", "-v")
 				return nil
@@ -81,7 +80,7 @@ func ExecUnitTests() {
 		fmt.Printf("Completed [%s] tests\n", t.Dir)
 		printDivider()
 
-		err = os.Chdir("../t")
+		err = os.Chdir("../TestRunner")
 		if err != nil {
 			panic(err)
 		}

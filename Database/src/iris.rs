@@ -1,15 +1,16 @@
 #![feature(map_first_last)]
 #![feature(test)]
 #![feature(proc_macro_hygiene, decl_macro)]
+#![feature(trait_alias)]
 
 #[macro_use]
 extern crate rocket;
 
 use crate::conn::server::Server;
+use crate::io::filesystem;
 use crate::io::filesystem::DatabasePath;
 use crate::io::logger::s_log;
 use crate::io::logger::EventSeverity::Info;
-use crate::io::{filesystem, logger};
 use std::env;
 
 mod conn;

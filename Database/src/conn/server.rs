@@ -13,8 +13,9 @@ use crate::database::graph::Graph;
 use crate::io::logger::s_log;
 use crate::io::logger::EventCategory::Network;
 use crate::io::logger::EventSeverity::Info;
-use crate::iql::keyword::DispatchQueryContext;
+use crate::iql::keyword::{get_registered_keywords, DispatchQueryContext, KeywordMap};
 use crate::lib::json::{fmt_table, JsonObject};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// An IrisDB server.
@@ -59,7 +60,7 @@ pub struct Database {
 
 impl Database {
 	fn new() -> Self {
-		Self {
+		Database {
 			graphs: HashMap::new(),
 		}
 	}
@@ -75,11 +76,19 @@ impl Database {
 }
 
 #[post("/graph/_query", data = "<body>")]
-fn graph_query(
+fn graph_query<'a>(
 	body: Json<JsonObject>,
 	ctx: State<Mutex<Database>>,
 	rf: ResponseFormat,
-) -> Response {
+) -> Response<'a> {
+	handle_graph_query::<(), ()>(body, ctx, rf)
+}
+
+fn handle_graph_query<'a, A, B>(
+	body: Json<JsonObject>,
+	ctx: State<Mutex<Database>>,
+	rf: ResponseFormat,
+) -> Response<'a> {
 	let mut db = ctx.inner().lock().unwrap();
 
 	let body = Value::from(body.into_inner());
@@ -87,7 +96,7 @@ fn graph_query(
 	let query = &body["query"];
 	if query.is_null() || !query.is_array() {
 		let res = fmt_table(&vec![response_builder::json_error_object(
-			"Expected an array for Query",
+			"Expected an array for query",
 			&JsonObject::new(),
 		)]);
 		return response_builder::new_response(rf, Status::Ok, res);
@@ -99,7 +108,7 @@ fn graph_query(
 	if !graph_key.is_null() {
 		if !graph_key.is_string() {
 			let res = fmt_table(&vec![response_builder::json_error_object(
-				"Expected a string for Graph",
+				"Expected a string for graph",
 				&JsonObject::new(),
 			)]);
 			return response_builder::new_response(rf, Status::Ok, res);
@@ -116,7 +125,7 @@ fn graph_query(
 	if !return_stmt_key.is_null() {
 		if !return_stmt_key.is_string() {
 			let res = fmt_table(&vec![response_builder::json_error_object(
-				"Expected a string for Return",
+				"Expected a string for return",
 				&JsonObject::new(),
 			)]);
 			return response_builder::new_response(rf, Status::Ok, res);
@@ -125,7 +134,12 @@ fn graph_query(
 		return_stmt = return_stmt_key.as_str().unwrap();
 	}
 
-	let query_ctx = DispatchQueryContext::new(graph, query.as_array().unwrap(), return_stmt);
+	let kws = get_registered_keywords();
+
+	let query_ctx =
+		DispatchQueryContext::<A, B>::new(graph, query.as_array().unwrap(), return_stmt, &kws);
+
+	query_ctx.execute();
 
 	response_builder::new_response(JSON, Status::Ok, "{}\n".to_string())
 }

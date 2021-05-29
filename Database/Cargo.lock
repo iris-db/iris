@@ -687,6 +687,7 @@ dependencies = [
  "ctrlc",
  "encoding",
  "encoding_rs_io",
+ "lazy_static",
  "rand 0.8.3",
  "rocket",
  "rocket_contrib",

@@ -3,9 +3,9 @@ use std::io::Write;
 use std::slice::Iter;
 use std::{fs, io};
 
-pub const ROOT_PATH: &str = "iris";
+pub const ROOT_PATH: &str = "Database";
 
-/// Initializes all of the directories for the iris process.
+/// Initializes all of the directories for the Database process.
 pub fn prepare() {
 	for path in DatabasePath::paths() {
 		match fs::create_dir_all(path.path()) {
@@ -58,7 +58,7 @@ impl DatabasePath {
 	/// For example (Log path):
 	///
 	/// * `Input` - object.meta
-	/// * `Output` - iris/logs/object.meta
+	/// * `Output` - Database/logs/object.meta
 	pub fn file(&self, file: &str) -> String {
 		format!("{}/{}", self.path(), file)
 	}

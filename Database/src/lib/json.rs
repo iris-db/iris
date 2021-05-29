@@ -1,7 +1,10 @@
 use crate::conn::response_builder::ResponseFormat;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 pub type JsonObject = Map<String, Value>;
+
+pub trait JsonSerializable = Serialize + for<'de> Deserialize<'de>;
 
 /// Represents a a raw BSON document.
 pub struct RawBson<'a>(&'a Vec<u8>);

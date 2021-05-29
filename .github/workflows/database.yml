@@ -1,4 +1,4 @@
-# Runs the unit tests in the iris directory.
+# Runs the unit tests in the Database directory.
 
 name: "Database CI"
 
@@ -20,5 +20,5 @@ jobs:
       - name: Run unit tests
         run: |
           rustup install nightly
-          cd t
+          cd TestRunner
           ./test.sh -u
