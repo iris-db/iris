@@ -1,5 +1,5 @@
 use crate::iql::keyword::{DispatchKeywordContext, Keyword, KeywordError};
-use crate::lib::json::JsonObject;
+use crate::lib::json::types::JsonObject;
 
 pub struct Insert;
 

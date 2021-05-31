@@ -8,7 +8,7 @@ use std::{fs, io};
 use bson::{Bson, Document};
 
 use crate::io::filesystem::DatabasePath;
-use crate::lib::json::JsonObject;
+use crate::lib::json::types::JsonObject;
 
 /// The maximum amount of data that is able to fit on a single page.
 ///
@@ -181,8 +181,7 @@ impl Header {
     /// Attempts to unmarshal an integer value from a key-value pair, defaulting to zero if it is not
     /// present.
     fn get_int(key: &str, map: &HashMap<String, String>) -> u64 {
-        map
-            .get(key)
+        map.get(key)
             .unwrap_or(&"0".to_string())
             .parse()
             .unwrap_or(0)
@@ -281,8 +280,7 @@ where
 
     let mut fin: Vec<ReadObjectResult<S>> = Vec::new();
 
-    acc
-        .into_iter()
+    acc.into_iter()
         .map(|read| {
             (
                 Bson::from(read.0)
@@ -309,8 +307,10 @@ mod tests {
 
     use serde_json::{json, Value};
 
+    use crate::lib;
+    use crate::lib::json::types::JsonObject;
+
     use super::*;
-    use crate::lib::bson_encoder::encode;
 
     /// Serializable struct for testing.
     struct IdWrapper {
@@ -320,7 +320,7 @@ mod tests {
 
     impl PageSerializable for IdWrapper {
         fn marshall(&self) -> Vec<u8> {
-            encode(
+            lib::json::bson::encode(
                 json!({ "firstName": self.first_name, "lastName": self.last_name })
                     .as_object()
                     .unwrap()
@@ -396,8 +396,7 @@ mod tests {
             let mut buf = Vec::new();
 
             Document::try_from(
-                val
-                    .as_object()
+                val.as_object()
                     .expect("Could not convert to JsonObject")
                     .clone(),
             )

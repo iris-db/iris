@@ -2,10 +2,10 @@ use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
-use crate::database::edge::Edge;
 use crate::io::page::PageSerializable;
-use crate::lib::bson_encoder::encode;
-use crate::lib::json::JsonObject;
+use crate::lib;
+use crate::lib::json::types::JsonObject;
+use crate::storage_engines::affinity::edge::Edge;
 use serde_json::Value;
 
 /// Create a node from a BSON string and edges.
@@ -54,7 +54,7 @@ impl Node {
 
 impl PageSerializable for Node {
     fn marshall(&self) -> Vec<u8> {
-        encode(
+        lib::json::bson::encode(
             serde_json::to_value(self)
                 .unwrap()
                 .as_object()

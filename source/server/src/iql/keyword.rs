@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::database::graph::Graph;
 use crate::iql::keywords::*;
-use crate::lib::json::JsonObject;
+use crate::lib::json::types::JsonObject;
+use crate::storage_engines::affinity::graph::Graph;
 
 /// Get all keywords.
 ///

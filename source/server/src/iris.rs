@@ -14,12 +14,11 @@ use crate::io::logger::EventSeverity::Info;
 use std::env;
 
 mod conn;
-mod database;
 #[allow(warnings, unused)]
-mod generated;
 mod io;
 mod iql;
 mod lib;
+mod storage_engines;
 #[allow(unused_imports)]
 mod test_setup;
 use rand::Rng;

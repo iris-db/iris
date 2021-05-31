@@ -3,7 +3,7 @@ use std::io::Write;
 use std::slice::Iter;
 use std::{fs, io};
 
-pub const ROOT_PATH: &str = "src";
+pub const ROOT_PATH: &str = "iris";
 
 /// Initializes all of the directories for the src process.
 pub fn prepare() {

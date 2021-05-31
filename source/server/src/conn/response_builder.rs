@@ -1,4 +1,4 @@
-use crate::lib::json::JsonObject;
+use crate::lib::json::types::JsonObject;
 use rocket::http::{ContentType, Status};
 use rocket::request::{FromRequest, Outcome};
 use rocket::{Request, Response};

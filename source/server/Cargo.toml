@@ -17,9 +17,8 @@ rand = "0.8"
 ctrlc = "3.1.9"
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
 lazy_static = "1.4.0"
-
-[build-dependencies]
-bindgen = "0.53.1"
+snap = "1"
+compress = "0.2.1"
 
 [dependencies.rocket_contrib]
 version = "0.4.7"
