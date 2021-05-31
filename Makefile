@@ -5,12 +5,12 @@ SUBDIRS = Database
 all: $(SUBDIRS)
 
 $(SUBDIRS):
-	@$(MAKE) -w -C $@ all
+    @$(MAKE) -w -C $@ all
 
 image:
-	@echo Building docker image
-	@echo TODO
+    @echo Building docker image
+    @echo TODO
 
 ci:
-	@echo Executing all tests
-	./test.sh -a
+    @echo Executing all tests
+    ./test.sh -a

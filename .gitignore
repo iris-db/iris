@@ -1,6 +1,5 @@
 # src
-source/target
-source/router
+source/server/target
 
 # Artifacts
 **/build

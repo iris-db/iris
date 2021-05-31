@@ -4,11 +4,11 @@ use crate::lib::json::JsonObject;
 pub struct Insert;
 
 impl Keyword for Insert {
-	fn key(&self) -> String {
-		"insert".into()
-	}
+    fn key(&self) -> String {
+        "insert".into()
+    }
 
-	fn exec(&self, ctx: DispatchKeywordContext) -> Result<JsonObject, KeywordError> {
-		unimplemented!()
-	}
+    fn exec(&self, ctx: DispatchKeywordContext) -> Result<JsonObject, KeywordError> {
+        unimplemented!()
+    }
 }
