@@ -1,14 +1,14 @@
-# Database
-Database/target
-Database/iris
+# src
+source/target
+source/router
 
 # Artifacts
 **/build
 **/dist
 
 # t and b
-TestRunner/__TEST_SCRIPT__
-BuildSystem/__BUILD_SCRIPT__
+testscripts/__TEST_SCRIPT__
+buildscripts/__BUILD_SCRIPT__
 
 # IDE
 .idea

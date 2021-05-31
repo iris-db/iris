@@ -1,6 +1,4 @@
-# Runs the unit tests in the Database directory.
-
-name: "Database CI"
+name: "Unit Test CI"
 
 on:
   push:
@@ -19,6 +17,4 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run unit tests
         run: |
-          rustup install nightly
-          cd TestRunner
-          ./test.sh -u
+          echo TODO NOT IMPLEMENTED!

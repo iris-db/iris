@@ -13,7 +13,7 @@ use crate::database::graph::Graph;
 use crate::io::logger::s_log;
 use crate::io::logger::EventCategory::Network;
 use crate::io::logger::EventSeverity::Info;
-use crate::iql::keyword::{get_registered_keywords, DispatchQueryContext, KeywordMap};
+use crate::iql::keyword::{get_registered_keywords, DispatchQueryContext};
 use crate::lib::json::{fmt_table, JsonObject};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -73,6 +73,11 @@ impl Database {
 	fn graphs(&mut self) -> &mut HashMap<String, Graph> {
 		&mut self.graphs
 	}
+}
+
+#[derive(Serialize, Deserialize)]
+struct RequestBody {
+	query: Option<Vec<Value>>,
 }
 
 #[post("/graph/_query", data = "<body>")]
@@ -136,8 +141,7 @@ fn handle_graph_query<'a, A, B>(
 
 	let kws = get_registered_keywords();
 
-	let query_ctx =
-		DispatchQueryContext::<A, B>::new(graph, query.as_array().unwrap(), return_stmt, &kws);
+	let query_ctx = DispatchQueryContext::new(graph, query.as_array().unwrap(), return_stmt, &kws);
 
 	query_ctx.execute();
 

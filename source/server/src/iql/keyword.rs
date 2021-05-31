@@ -4,23 +4,51 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::database::graph::Graph;
-use crate::iql::keywords::{Delete, Insert};
-use crate::lib::json::JsonSerializable;
-use std::any::Any;
+use crate::iql::keywords::*;
+use crate::lib::json::JsonObject;
 
-pub struct DispatchKeywordContext<'a, T>
-where
-	T: JsonSerializable,
-{
-	graph: &'a Option<&'a mut Graph>,
-	data: &'a T,
+/// Get all keywords.
+///
+/// Should only be called once at the start of the program.
+pub fn get_registered_keywords() -> KeywordMap {
+	KeywordRegistration(vec![Box::new(Insert)]).into()
 }
 
-impl<'a, T> DispatchKeywordContext<'a, T>
-where
-	T: JsonSerializable,
-{
-	fn new(graph: &'a Option<&mut Graph>, data: &'a T) -> Self {
+/// An IQL keyword.
+pub trait Keyword: Send {
+	/// The key of the keyword.
+	/// Example: `INSERT`
+	fn key(&self) -> String;
+	/// Implementation of the keyword.
+	fn exec(&self, ctx: DispatchKeywordContext) -> Result<JsonObject, KeywordError>;
+}
+
+/// Maps a `Keyword`'s key name to its implementation.
+type KeywordMap = HashMap<String, Box<dyn Keyword>>;
+
+/// Wrapper type for converting to a `KeywordMap`.
+pub struct KeywordRegistration(pub Vec<Box<dyn Keyword>>);
+
+impl From<KeywordRegistration> for KeywordMap {
+	fn from(kw_reg: KeywordRegistration) -> Self {
+		let mut m = KeywordMap::new();
+
+		for kw in kw_reg.0 {
+			m.insert(kw.key(), kw);
+		}
+
+		m
+	}
+}
+
+/// Holds the data required for a `Keyword` to mutate the database.
+pub struct DispatchKeywordContext<'a> {
+	graph: &'a Option<&'a mut Graph>,
+	data: &'a Value,
+}
+
+impl<'a> DispatchKeywordContext<'a> {
+	fn new(graph: &'a Option<&mut Graph>, data: &'a Value) -> Self {
 		Self { graph, data }
 	}
 
@@ -28,54 +56,16 @@ where
 		&self.graph
 	}
 
-	pub fn data(&self) -> &&T {
-		&self.data
-	}
-}
-
-/// An IQL keyword.
-pub trait Keyword: Send {
-	type Args: JsonSerializable;
-	type Ok: JsonSerializable;
-
-	/// The key of the keyword.
-	/// Example: `INSERT`
-	fn key(&self) -> String;
-	/// Implementation of the keyword.
-	fn exec(&self, ctx: DispatchKeywordContext<Self::Args>) -> Result<Self::Ok, QueryError>;
-}
-
-/// Get all keywords.
-///
-/// Should only be called once at the start of the program.
-pub fn get_registered_keywords<'a, A: Keyword, B: JsonSerializable>(x: &str) -> SizedKeyword<A, B> {
-	return match x {
-		_ => Box::new(Insert),
-	};
-}
-
-pub type SizedKeyword<A, B> = Box<dyn Keyword<Ok = A, Args = B>>;
-
-/// A HashMap mapping a String (the keyword JSON key) to the keyword implementation.
-pub type KeywordMap<A, B> = HashMap<String, SizedKeyword<A, B>>;
-
-/// A list of all registered Iris Query Language keywords.
-struct KeywordRegistration<A, B>(pub Vec<SizedKeyword<A, B>>);
-
-impl<A, B> From<KeywordRegistration<A, B>> for KeywordMap<A, B> {
-	fn from(kw_reg: KeywordRegistration<A, B>) -> Self {
-		let mut map = KeywordMap::new();
-
-		for kw in kw_reg.0 {
-			map.insert(kw.key(), kw);
-		}
-
-		map
+	pub fn data<T>(&self) -> Result<T, serde_json::Error>
+	where
+		for<'de> T: Deserialize<'de>,
+	{
+		serde_json::from_value(self.data.clone())
 	}
 }
 
 /// Holds the information for a query (multiple keywords in a sequence).
-pub struct DispatchQueryContext<'a, 'b, 'c, A, B> {
+pub struct DispatchQueryContext<'a, 'b, 'c> {
 	/// The graph to execute the keyword on.
 	graph: Option<&'a mut Graph>,
 	/// The JSON array holding the query keywords.
@@ -83,13 +73,13 @@ pub struct DispatchQueryContext<'a, 'b, 'c, A, B> {
 	/// The object that must be returned from the query.
 	return_stmt: &'b str,
 	/// A reference to the registered keywords.
-	keywords: &'c KeywordMap<A, B>,
+	keywords: &'c KeywordMap,
 }
 
 #[derive(Serialize, Deserialize)]
-/// A successful query result.
-pub struct QueryResult {
-	/// The query action performed.
+/// A successful `Keyword` execution.
+pub struct KeywordResult {
+	/// The keyword performed.
 	pub keyword: Option<String>,
 	#[serde(rename = "ref")]
 	/// The ref of the query result.
@@ -97,8 +87,9 @@ pub struct QueryResult {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct QueryError {
-	/// The query action performed.
+/// A unsuccessful `Keyword` execution.
+pub struct KeywordError {
+	/// The keyword performed.
 	pub keyword: Option<String>,
 	/// Error message.
 	pub msg: Option<String>,
@@ -110,9 +101,9 @@ pub struct QueryError {
 /// Result of executing a query.
 pub struct QueryExecutionResult {
 	/// Successfully executed query return data.
-	results: Vec<QueryResult>,
+	results: Vec<KeywordResult>,
 	/// Failed query execution error.
-	errors: Vec<QueryError>,
+	errors: Vec<KeywordError>,
 }
 
 impl QueryExecutionResult {
@@ -125,24 +116,24 @@ impl QueryExecutionResult {
 	}
 
 	/// Adds data to the query result.
-	pub fn result(&mut self, result: QueryResult) -> &mut QueryExecutionResult {
+	pub fn result(&mut self, result: KeywordResult) -> &mut QueryExecutionResult {
 		self.results.push(result);
 		self
 	}
 
 	/// Adds an error to the query result.
-	pub fn error(&mut self, error: QueryError) -> &mut QueryExecutionResult {
+	pub fn error(&mut self, error: KeywordError) -> &mut QueryExecutionResult {
 		self.errors.push(error);
 		self
 	}
 }
 
-impl<'a, 'b, 'c, A, B> DispatchQueryContext<'a, 'b, 'c, A, B> {
+impl<'a, 'b, 'c> DispatchQueryContext<'a, 'b, 'c> {
 	pub fn new(
 		graph: Option<&'a mut Graph>,
 		query: &'b Vec<Value>,
 		return_stmt: &'b str,
-		keywords: &'c KeywordMap<A, B>,
+		keywords: &'c KeywordMap,
 	) -> Self {
 		DispatchQueryContext {
 			graph,
@@ -159,7 +150,7 @@ impl<'a, 'b, 'c, A, B> DispatchQueryContext<'a, 'b, 'c, A, B> {
 		for (i, query_stmt) in self.query.iter().enumerate() {
 			let stmt = &query_stmt[0];
 			if !stmt.is_object() {
-				res.error(QueryError {
+				res.error(KeywordError {
 					keyword: None,
 					msg: "Expected an object".to_string().into(),
 					data: json!({ "queryIndex": i }).into(),
@@ -174,7 +165,7 @@ impl<'a, 'b, 'c, A, B> DispatchQueryContext<'a, 'b, 'c, A, B> {
 			let kw = match kw {
 				Some(kw) => kw,
 				None => {
-					res.error(QueryError {
+					res.error(KeywordError {
 						keyword: query_key.clone().into(),
 						msg: format!("Unknown query directive {}", query_key).into(),
 						data: json!({ "keyword": query_key }).into(),

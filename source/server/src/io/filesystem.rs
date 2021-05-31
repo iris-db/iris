@@ -3,9 +3,9 @@ use std::io::Write;
 use std::slice::Iter;
 use std::{fs, io};
 
-pub const ROOT_PATH: &str = "Database";
+pub const ROOT_PATH: &str = "src";
 
-/// Initializes all of the directories for the Database process.
+/// Initializes all of the directories for the src process.
 pub fn prepare() {
 	for path in DatabasePath::paths() {
 		match fs::create_dir_all(path.path()) {
@@ -15,7 +15,7 @@ pub fn prepare() {
 	}
 }
 
-/// Database storage paths.
+/// src storage paths.
 pub enum DatabasePath {
 	/// Graph data.
 	Data,
@@ -58,7 +58,7 @@ impl DatabasePath {
 	/// For example (Log path):
 	///
 	/// * `Input` - object.meta
-	/// * `Output` - Database/logs/object.meta
+	/// * `Output` - src/logs/object.meta
 	pub fn file(&self, file: &str) -> String {
 		format!("{}/{}", self.path(), file)
 	}

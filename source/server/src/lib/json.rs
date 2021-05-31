@@ -1,10 +1,8 @@
-use crate::conn::response_builder::ResponseFormat;
-use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-pub type JsonObject = Map<String, Value>;
+use crate::conn::response_builder::ResponseFormat;
 
-pub trait JsonSerializable = Serialize + for<'de> Deserialize<'de>;
+pub type JsonObject = Map<String, Value>;
 
 /// Represents a a raw BSON document.
 pub struct RawBson<'a>(&'a Vec<u8>);
@@ -122,9 +120,9 @@ pub fn fmt_table(result: &Vec<JsonObject>) -> String {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-
 	use serde_json::json;
+
+	use super::*;
 
 	#[test]
 	fn test_fmt_table() {
