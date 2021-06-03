@@ -18,7 +18,7 @@ ctrlc = "3.1.9"
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
 lazy_static = "1.4.0"
 snap = "1"
-compress = "0.2.1"
+flate2 = "1.0.20"
 
 [dependencies.rocket_contrib]
 version = "0.4.7"
