@@ -14,7 +14,7 @@ use crate::conn::response_builder::ResponseFormat::JSON;
 use crate::io::logger::s_log;
 use crate::io::logger::EventCategory::Network;
 use crate::io::logger::EventSeverity::Info;
-use crate::lib::json::types::JsonObject;
+use crate::lib::json::types::{JsonObject, SmartJson};
 use crate::storage_engines::affinity::database::Database;
 
 /// An IrisDB server.
@@ -71,6 +71,8 @@ fn graph_query<'a>(
 	let mut db = ctx.inner().lock().unwrap();
 
 	let body = Value::from(body.into_inner());
+
+	let body: RequestBody = SmartJson::from(body).into_struct().ok().unwrap();
 
 	response_builder::new_response(JSON, Status::Ok, "{}\n".to_string())
 }
