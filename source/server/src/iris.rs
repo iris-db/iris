@@ -27,36 +27,36 @@ use crate::io::logger::EventCategory::{ConnPool, Filesystem, General};
 use serde_json::json;
 
 fn main() {
-	s_log(Info, General, "Starting IrisDB v0.0.1");
+    s_log(Info, General, "Starting IrisDB v0.0.1");
 
-	filesystem::prepare();
+    filesystem::prepare();
 
-	for dir in DatabasePath::paths() {
-		s_log(
-			Info,
-			Filesystem,
-			&*format!(
-				"[Directory-InUse] {}/{}",
-				env::current_dir().unwrap().to_str().unwrap(),
-				dir.path()
-			),
-		);
-	}
+    for dir in DatabasePath::paths() {
+        s_log(
+            Info,
+            Filesystem,
+            &*format!(
+                "[Directory-InUse] {}/{}",
+                env::current_dir().unwrap().to_str().unwrap(),
+                dir.path()
+            ),
+        );
+    }
 
-	s_log(
-		Info,
-		ConnPool,
-		&*format!(
-			"[Connection-Info] {}",
-			json!({
-				"instanceId": rand::thread_rng().gen_range(0..u16::MAX),
-				"port": 12712,
-				"shardCount": 0
-			})
-			.to_string()
-		),
-	);
+    s_log(
+        Info,
+        ConnPool,
+        &*format!(
+            "[Connection-Info] {}",
+            json!({
+                "instanceId": rand::thread_rng().gen_range(0..u16::MAX),
+                "port": 12712,
+                "shardCount": 0
+            })
+            .to_string()
+        ),
+    );
 
-	let s = Server::new(12712, 0);
-	s.start();
+    let s = Server::new(12712, 0);
+    s.start();
 }

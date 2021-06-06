@@ -18,72 +18,72 @@ pub type NodeId = u64;
 /// format.
 #[derive(Serialize, Deserialize)]
 pub struct Node {
-	id: NodeId,
-	group: String,
-	data: Value,
-	edges: Vec<Edge>,
+    id: NodeId,
+    group: String,
+    data: Value,
+    edges: Vec<Edge>,
 }
 
 impl Node {
-	pub fn new(
-		id: NodeId,
-		group: Option<String>,
-		data: Option<Value>,
-		edges: Option<Vec<Edge>>,
-	) -> Node {
-		Node {
-			id,
-			group: group.unwrap_or("".to_string()),
-			data: data.unwrap_or(Value::Object(JsonObject::new())),
-			edges: edges.unwrap_or(Vec::new()),
-		}
-	}
+    pub fn new(
+        id: NodeId,
+        group: Option<String>,
+        data: Option<Value>,
+        edges: Option<Vec<Edge>>,
+    ) -> Node {
+        Node {
+            id,
+            group: group.unwrap_or("".to_string()),
+            data: data.unwrap_or(Value::Object(JsonObject::new())),
+            edges: edges.unwrap_or(Vec::new()),
+        }
+    }
 
-	pub fn id(&self) -> &NodeId {
-		&self.id
-	}
+    pub fn id(&self) -> &NodeId {
+        &self.id
+    }
 
-	pub fn data(&self) -> &Value {
-		&self.data
-	}
+    pub fn data(&self) -> &Value {
+        &self.data
+    }
 
-	pub fn edges(&self) -> &Vec<Edge> {
-		&self.edges
-	}
+    pub fn edges(&self) -> &Vec<Edge> {
+        &self.edges
+    }
 }
 
 impl PageSerializable for Node {
-	fn marshall(&self) -> Vec<u8> {
-		lib::json::bson::encode(
-			serde_json::to_value(self)
-				.unwrap()
-				.as_object()
-				.unwrap()
-				.clone(),
-		)
-	}
+    fn marshall(&self) -> Vec<u8> {
+        lib::json::bson::encode(
+            serde_json::to_value(self)
+                .unwrap()
+                .as_object()
+                .unwrap()
+                .clone(),
+        )
+    }
 
-	fn unmarshall(o: JsonObject) -> Self {
-		serde_json::from_value(Value::from(o)).unwrap()
-	}
+    fn unmarshall(o: JsonObject) -> Self {
+        serde_json::from_value(Value::from(o)).unwrap()
+    }
 }
 
 impl Ord for Node {
-	fn cmp(&self, other: &Self) -> Ordering {
-		self.id.cmp(&other.id)
-	}
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
 }
 
 impl PartialOrd for Node {
-	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-		self.id.partial_cmp(&other.id)
-	}
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
 }
 
 impl Eq for Node {}
 
 impl PartialEq for Node {
-	fn eq(&self, other: &Self) -> bool {
-		self.id.eq(&other.id)
-	}
+    fn eq(&self, other: &Self) -> bool {
+        self.id.eq(&other.id)
+    }
 }
