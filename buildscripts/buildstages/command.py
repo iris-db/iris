@@ -24,7 +24,7 @@ class Command:
 
         return cls(cmd_str)
 
-    def to_string(self):
+    def to_string(self) -> str:
         """Command string representation."""
         return self._cmd_str
 
