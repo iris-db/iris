@@ -10,8 +10,10 @@ testscripts/__TEST_SCRIPT__
 buildscripts/__BUILD_SCRIPT__
 
 # IDE
+**/*.iml
 .idea
 
 # Other
+**/venv
 **/__pycache__
 **/*.DS_Store
