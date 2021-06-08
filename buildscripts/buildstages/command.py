@@ -1,37 +1,20 @@
 import subprocess
 from dataclasses import dataclass
-from typing import Dict, Any
 
 
 @dataclass
 class Command:
     """Runs a command in the terminal. Commands must be in the format of `root sub0 sub1 --flag1 -flag2`"""
+    _string: str
 
-    _cmd_str: str
-
-    @classmethod
-    def build(cls, name: str, sub: list[str] = None, flags: Dict[str, Any] = None):
-        """Creates a command from a root command name, a list of sub commands, and flags. Useful for building a
-        a command string dynamically."""
-        cmd_str = f"{name} "
-
-        for s in sub:
-            cmd_str += f"{s} "
-
-        if flags is not None:
-            for key, value in flags.items():
-                cmd_str += key + " " + str(value)
-
-        return cls(cmd_str)
-
-    def to_string(self) -> str:
-        """Command string representation."""
-        return self._cmd_str
+    @property
+    def string(self):
+        return self._string
 
     def exec(self) -> int:
-        """Executes the command, returning the exit code."""
-        res = subprocess.run(self._cmd_str)
-        return res.returncode
+        """Executes the command, returning its exit code."""
+        result = subprocess.run(self._string, shell=True)
+        return result.returncode
 
 
 @dataclass
