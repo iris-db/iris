@@ -1,29 +1,21 @@
-from typing import Dict, Any
-
 from buildstages.command import Command
-from buildstages.stage import BuildStage
+from buildstages.stage import BuildStage, stage_dict, FlagSet
 
 
 class Binary(BuildStage):
     name = "server"
+    working_directory = "source/server"
 
-    def run(self, flags: Dict[str, Any]):
-        pass
+    def run(self, flags: FlagSet):
+        build_cmd = "cargo build"
+
+        is_local = flags.get("-l", "--local")
+        if not is_local:
+            build_cmd += " --release"
+
+        Command(build_cmd).exec()
 
 
-_BUILD_STAGES = [
+BUILD_STAGES = stage_dict([
     Binary()
-]
-
-
-def _make_build_stages():
-    """Converts a list of build stages into a dict mapping the name of the stage as the key to its instance."""
-    new = {}
-
-    for stage in _BUILD_STAGES:
-        new[stage.name] = stage
-
-    return new
-
-
-BUILD_STAGES = _make_build_stages()
+])
