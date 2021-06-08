@@ -4,6 +4,15 @@ from buildstages.stage import FlagSet
 
 
 class FlagSetTest(unittest.TestCase):
+    def test_from_list(self):
+        flag_set = FlagSet.from_list(["-Quiet", "-FileName", "SomeFile.txt", "-Output", "Outfile.txt"])
+
+        self.assertEqual({
+            "-Quiet": "",
+            "-FileName": "SomeFile.txt",
+            "-Output": "Outfile.txt"
+        }, flag_set.flags)
+
     def test_get(self):
         alias_first = FlagSet({
             "-f": "alias.txt",

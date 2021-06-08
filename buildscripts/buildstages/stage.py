@@ -7,6 +7,26 @@ class FlagSet:
     """Provides a set of utility methods for a flag dictionary."""
     _flags: Dict[str, Any]
 
+    @classmethod
+    def from_list(cls, ls: list[str]):
+        def is_flag(obj) -> bool:
+            return isinstance(obj, str) and obj[0] == '-'
+
+        ls_len = len(ls)
+        new = {}
+
+        for i in range(ls_len):
+            item = ls[i]
+            if is_flag(item):
+                new[item] = ""
+                next_index = i + 1
+                if next_index < ls_len:
+                    next_item = ls[next_index]
+                    if not is_flag(next_item):
+                        new[item] = next_item
+
+        return cls(new)
+
     def get(self, *names):
         """Gets the first flag value by one of its aliases. Example: `get('-a', '--all')"""
         names = list(names)

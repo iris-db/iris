@@ -1,3 +1,4 @@
+import os
 import subprocess
 from dataclasses import dataclass
 
@@ -13,8 +14,13 @@ class Command:
 
     def exec(self) -> int:
         """Executes the command, returning its exit code."""
-        result = subprocess.run(self._string, shell=True)
-        return result.returncode
+        cmd_tokens = self._string.split(" ")
+        if cmd_tokens[0] == "cd":
+            os.chdir("".join(cmd_tokens[1:]))
+            return 0
+        else:
+            result = subprocess.run(self._string, shell=True)
+            return result.returncode
 
 
 @dataclass

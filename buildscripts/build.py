@@ -1,8 +1,9 @@
 import sys
 
 from buildstages.command import Command
+from buildstages.stage import FlagSet
 from buildstages.stages import BUILD_STAGES
-from cli_utils import MessageUtils
+from cli_utils import MessageUtils, directory_count
 
 
 def main():
@@ -18,9 +19,15 @@ def main():
     try:
         build_stage = BUILD_STAGES[target]
 
-        Command(f"cd ../{build_stage.working_directory}")
+        Command(f"cd ../{build_stage.working_directory}").exec()
 
-        build_stage.run(flags)
+        build_stage.run(FlagSet.from_list(flags))
+
+        back_cd = ""
+        for i in range(directory_count(build_stage.working_directory)):
+            back_cd += "../"
+
+        Command(f"cd {back_cd}").exec()
     except KeyError:
         MessageUtils.display_invalid_target_error()
         exit(1)
