@@ -80,7 +80,7 @@ mod compressors {
 
         #[test]
         fn test_snappy() {
-            let v = json!({
+            let json_value = json!({
                 "username": "Stevemmmmm",
                 "password": "g$ae89ru8q39ilozxcji8oqu3ruiopfhj7i8oqu3rhioudhf",
                 "address": {
@@ -96,7 +96,7 @@ mod compressors {
                 ]
             });
 
-            let bytes = encode(v.as_object().unwrap().clone());
+            let bytes = encode(json_value.as_object().unwrap().clone());
 
             let out = Snappy.compress(&bytes);
 
@@ -105,7 +105,7 @@ mod compressors {
 
         #[test]
         fn test_zlib() {
-            let v = json!({
+            let json_value = json!({
                 "username": "Stevemmmmm",
                 "password": "g$ae89ru8q39ilozxcji8oqu3ruiopfhj7i8oqu3rhioudhf",
                 "address": {
@@ -121,7 +121,7 @@ mod compressors {
                 ]
             });
 
-            let bytes = encode(v.as_object().unwrap().clone());
+            let bytes = encode(json_value.as_object().unwrap().clone());
 
             let out = ZLib.compress(&bytes);
 
