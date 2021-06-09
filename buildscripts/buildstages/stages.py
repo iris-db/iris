@@ -9,8 +9,8 @@ class Binary(BuildStage):
     def run(self, flags: FlagSet):
         build_cmd = "cargo build"
 
-        is_local = flags.get("-l", "--local")
-        if not is_local:
+        is_local = flags.get("-d", "--dev")
+        if is_local is None:
             build_cmd += " --release"
 
         Command(build_cmd).exec()

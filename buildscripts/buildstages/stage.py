@@ -18,7 +18,7 @@ class FlagSet:
         for i in range(ls_len):
             item = ls[i]
             if is_flag(item):
-                new[item] = ""
+                new[item] = None
                 next_index = i + 1
                 if next_index < ls_len:
                     next_item = ls[next_index]
