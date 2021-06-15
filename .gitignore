@@ -1,5 +1,5 @@
 # src
-source/server/target
+**/target
 
 # Artifacts
 **/build
