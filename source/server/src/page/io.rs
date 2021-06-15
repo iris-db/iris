@@ -9,13 +9,7 @@ use bson::{Bson, Document};
 
 use crate::io::filesystem::DatabasePath;
 use crate::lib::json::types::JsonObject;
-
-/// The maximum amount of data that is able to fit on a single page.
-///
-/// The standard maximum is 2MB.
-pub const MAX_PAGE_SIZE: usize = 2E6 as usize;
-/// File extension of the page metadata.
-pub const META_PAGE_EXT: &str = "meta";
+use crate::page::page::{MAX_PAGE_SIZE, META_PAGE_EXT};
 
 /// Represents an object that is able to be serialized into a page.
 pub trait PageSerializable {
@@ -132,7 +126,7 @@ pub enum ReadError {
     Io(io::Error),
     /// Error while trying to deserialize a document.
     CorruptedBsonDocument(bson::de::Error),
-    /// Not a UTF8 header.
+    /// Not a UTF-8 header.
     CorruptedHeader(FromUtf8Error),
     /// Improper key value formatting.
     MalformedHeader,
