@@ -1,4 +1,3 @@
-use crate::storage_engines::affinity::graph::Graph;
 use std::collections::HashMap;
 
 /// An in memory representation of the database.
@@ -13,7 +12,7 @@ impl Database {
         }
     }
 
-    pub fn graphs(&mut self) -> &mut HashMap<String, Graph> {
+    pub fn documents(&mut self) -> &mut HashMap<String, Graph> {
         &mut self.graphs
     }
 }

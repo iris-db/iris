@@ -18,9 +18,11 @@ mod conn;
 mod io;
 mod iql;
 mod lib;
+mod page;
 mod storage_engines;
 #[allow(unused_imports)]
 mod test_setup;
+
 use rand::Rng;
 
 use crate::io::logger::EventCategory::{ConnPool, Filesystem, General};
