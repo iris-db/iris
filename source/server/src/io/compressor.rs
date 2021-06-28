@@ -73,7 +73,7 @@ mod compressors {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use crate::lib::json::bson::encode;
+        use crate::lib::json::bsonio::encoder::encode_json_object;
         use crate::lib::json::types::JsonObject;
         use serde_json::json;
         use std::fs;
@@ -96,7 +96,7 @@ mod compressors {
                 ]
             });
 
-            let bytes = encode(json_value.as_object().unwrap().clone());
+            let bytes = encode_json_object(json_value.as_object().unwrap().clone());
 
             let out = Snappy.compress(&bytes);
 
@@ -121,7 +121,7 @@ mod compressors {
                 ]
             });
 
-            let bytes = encode(json_value.as_object().unwrap().clone());
+            let bytes = encode_json_object(json_value.as_object().unwrap().clone());
 
             let out = ZLib.compress(&bytes);
 
