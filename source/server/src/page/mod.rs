@@ -1,3 +1,4 @@
-pub mod io;
+pub mod error;
+mod io;
+pub mod metadata;
 pub mod page;
-mod decode;

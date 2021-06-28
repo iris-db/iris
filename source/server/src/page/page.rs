@@ -1,4 +1,4 @@
-use crate::page::decode::Decoder;
+use crate::lib::json::types::JsonObject;
 
 /// The maximum amount of data that is able to fit on a single page.
 ///
@@ -7,23 +7,28 @@ pub const MAX_PAGE_SIZE: usize = 2E6 as usize;
 /// File extension of the page metadata.
 pub const META_PAGE_EXT: &str = "meta";
 
-/// A set of data limited to the max page size.
-pub struct Page<'a, T> {
-    /// Filesystem path relative to the database data path.
-    path: String,
-    /// Decoding strategy for the page.
-    decoder: &'a dyn Decoder<T>,
-    /// Page data loaded in memory.
-    contents: Option<Vec<T>>,
+pub trait PageReadable {
+    fn read(o: JsonObject) -> Self;
 }
 
-impl<'a, T> Page<'a, T> {
+pub trait PageWriteable {
+    fn write(self) -> Vec<u8>;
+}
+
+/// A set of data limited to the max page size.
+pub struct Page {
+    /// Filesystem path relative to the database data path.
+    path: String,
+    /// Page data loaded in memory.
+    contents: Option<Vec<JsonObject>>,
+}
+
+impl Page {
     /// Creates a new page from a path relative to the database data path.
-    pub fn new(path: String, decoder: &'a dyn Decoder<T>) -> Self {
+    pub fn link(path: String) -> Self {
         Page {
             path,
-            decoder,
-            contents: Some(Vec::new()),
+            contents: None,
         }
     }
 
@@ -34,13 +39,31 @@ impl<'a, T> Page<'a, T> {
     pub fn release(&self) {}
 
     /// Get the page contents if loaded in memory.
-    pub fn contents(&self) -> &Option<Vec<T>> {
+    pub fn contents(&self) -> &Option<Vec<JsonObject>> {
         &self.contents
     }
 
-    /// Update the page contents in memory and on the disk.
-    pub fn rewrite_contents(&mut self, new: Vec<u8>) {
-        self.contents = new.into();
-        // Rewrite to disk
+    /// Updates the page contents in memory.
+    pub fn update_contents(new: Vec<JsonObject>) {}
+
+    pub fn sync() {}
+
+    /// Writes the memory contents onto the filesystem if loaded.
+    pub fn fwrite(&mut self) {
+        if self.contents.is_none() {
+            return;
+        }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_memory_loader() {
+        let page = Page::link("/".into());
+        page.load();
+    }
+
+    fn view_state_controller() {}
 }

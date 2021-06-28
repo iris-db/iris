@@ -1,48 +1,14 @@
-use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, Cursor, Error, Write};
+use std::io::{Cursor, Write};
 use std::path::{Path, PathBuf};
-use std::string::FromUtf8Error;
 use std::{fs, io};
 
 use bson::{Bson, Document};
 
 use crate::io::filesystem::DatabasePath;
-use crate::lib::json::types::JsonObject;
-use crate::page::page::{MAX_PAGE_SIZE, META_PAGE_EXT};
-
-/// Represents an object that is able to be serialized into a page.
-pub trait PageSerializable {
-    /// Marshall a struct into a JSON object which is eventually converted into BSON.
-    fn marshall(&self) -> Vec<u8>;
-    /// Create original struct from a JSON object.
-    fn unmarshall(data: JsonObject) -> Self;
-}
-
-impl PageSerializable for Vec<u8> {
-    fn marshall(&self) -> Vec<u8> {
-        self.clone()
-    }
-
-    fn unmarshall(_o: JsonObject) -> Self {
-        Vec::new()
-    }
-}
-
-#[derive(Debug)]
-/// Error that occurs when attempting to write data to a page.
-pub enum WriteError {
-    /// Io error.
-    Io(io::Error),
-    /// The data attempting to be written will overflow the page size.
-    PageSizeExceeded(usize),
-}
-
-impl From<io::Error> for WriteError {
-    fn from(e: Error) -> Self {
-        WriteError::Io(e)
-    }
-}
+use crate::page::error::{ReadError, WriteError};
+use crate::page::metadata::PageMetadata;
+use crate::page::page::{PageReadable, PageWriteable, MAX_PAGE_SIZE, META_PAGE_EXT};
 
 /// Creates a metadata file containing the page header.
 pub fn new(name: &str) -> Result<(), WriteError> {
@@ -51,7 +17,7 @@ pub fn new(name: &str) -> Result<(), WriteError> {
 
     let mut file = File::create(p)?;
 
-    let bytes = marshall_header(Header::default());
+    let bytes: Vec<u8> = PageMetadata::new().into();
     write(&mut file, bytes)
 }
 
@@ -61,11 +27,11 @@ pub fn open(name: &str) -> Result<File, io::Error> {
 }
 
 /// Returns the length of the implementer as a usize.
-pub trait ComputableLength {
+pub trait ComputeByteSize {
     fn len(&self) -> Result<usize, ()>;
 }
 
-impl ComputableLength for File {
+impl ComputeByteSize for File {
     fn len(&self) -> Result<usize, ()> {
         let m = match self.metadata() {
             Ok(m) => m,
@@ -76,7 +42,7 @@ impl ComputableLength for File {
     }
 }
 
-impl<T> ComputableLength for Vec<T> {
+impl<T> ComputeByteSize for Vec<T> {
     fn len(&self) -> Result<usize, ()> {
         Ok(Vec::len(self))
     }
@@ -85,10 +51,10 @@ impl<T> ComputableLength for Vec<T> {
 /// Writes data to a file, restricting it to the maximum page size.
 pub fn write<T, S>(to: &mut T, contents: S) -> Result<(), WriteError>
 where
-    T: Write + ComputableLength,
-    S: PageSerializable,
+    T: Write + ComputeByteSize,
+    S: PageWriteable,
 {
-    let contents = contents.marshall();
+    let contents = contents.write();
 
     let total_size = to.len().unwrap() + contents.len();
 
@@ -119,127 +85,19 @@ fn get_page_with_ext(name: &str, ext: &str) -> PathBuf {
     Path::new(&DatabasePath::Data.path()).join(&[name, ".", ext].concat())
 }
 
-#[derive(Debug)]
-/// Error that occurs when attempting to read BSON documents from a page.
-pub enum ReadError {
-    /// Io error.
-    Io(io::Error),
-    /// Error while trying to deserialize a document.
-    CorruptedBsonDocument(bson::de::Error),
-    /// Not a UTF-8 header.
-    CorruptedHeader(FromUtf8Error),
-    /// Improper key value formatting.
-    MalformedHeader,
-}
-
-/// A page header is a key-value string that contains metadata about the page. Header key-pairs are
-/// separated by a whitespace: `KEY1=VALUE KEY2=VALUE`. Headers will always end with a newline
-/// character `\n`.
-///
-/// Each header contains the following key-value pairs.
-/// * `COUNT` - The amount of BSON documents
-/// * `POS` - The next available page file
-pub struct Header {
-    /// BSON document count.
-    pub count: u64,
-    /// Next page with available disk space.
-    pub pos: u64,
-}
-
-impl From<HashMap<String, String>> for Header {
-    fn from(map: HashMap<String, String>) -> Self {
-        Header {
-            count: Header::get_int("COUNT", &map),
-            pos: Header::get_int("POS", &map),
-        }
+impl PageWriteable for Vec<u8> {
+    fn write(self) -> Vec<u8> {
+        self
     }
-}
-
-impl From<Header> for HashMap<String, String> {
-    fn from(header: Header) -> Self {
-        vec![
-            ("COUNT".to_string(), header.count.to_string()),
-            ("POS".to_string(), header.pos.to_string()),
-        ]
-        .into_iter()
-        .collect()
-    }
-}
-
-impl Header {
-    /// Creates a new header with default values.
-    pub fn default() -> Header {
-        Header { count: 0, pos: 0 }
-    }
-
-    /// Attempts to unmarshal an integer value from a key-value pair, defaulting to zero if it is not
-    /// present.
-    fn get_int(key: &str, map: &HashMap<String, String>) -> u64 {
-        map.get(key)
-            .unwrap_or(&"0".to_string())
-            .parse()
-            .unwrap_or(0)
-    }
-}
-
-/// Reads a page header from a set of bytes.
-pub fn read_header(contents: Vec<u8>) -> Result<Header, ReadError> {
-    let mut cursor = Cursor::new(contents);
-    let mut header_bytes = Vec::new();
-
-    match cursor.read_until(b'\n', &mut header_bytes) {
-        Err(e) => return Err(ReadError::Io(e)),
-        _ => {}
-    }
-
-    let header = String::from_utf8(header_bytes);
-    let header = match header {
-        Ok(h) => h,
-        Err(e) => return Err(ReadError::CorruptedHeader(e)),
-    };
-
-    let mut kv_pairs: HashMap<String, String> = HashMap::new();
-
-    let kv_pairs_str = header.split_whitespace();
-    for kv_str in kv_pairs_str {
-        let kv = kv_str.split_once('=');
-        let kv = match kv {
-            Some(kv) => kv,
-            None => return Err(ReadError::MalformedHeader),
-        };
-
-        kv_pairs.insert(kv.0.to_string(), kv.1.to_string());
-    }
-
-    Ok(kv_pairs.into())
-}
-
-/// Marshals a page header into a byte sequence.
-fn marshall_header(new: Header) -> Vec<u8> {
-    let mut buf: Vec<u8> = Vec::new();
-
-    let new: HashMap<String, String> = new.into();
-
-    for (index, (key, value)) in new.iter().enumerate() {
-        buf.append(&mut key.clone().into_bytes());
-        buf.push(b'=');
-        buf.append(&mut value.clone().into_bytes());
-
-        if index != new.len() - 1 {
-            buf.push(b' ');
-        }
-    }
-
-    buf
 }
 
 /// Result of reading a single chunk of data from a page.
-pub struct ReadObjectResult<S>
+pub struct ReadObjectResult<O>
 where
-    S: PageSerializable,
+    O: PageReadable,
 {
     /// The BSON object that was read.
-    object: S,
+    object: O,
     /// The position in the page where the object was read.
     ///
     /// * `0` - Start byte
@@ -248,10 +106,12 @@ where
 }
 
 /// Reads the data from a BSON page.
-pub fn read_contents<S>(contents: &[u8]) -> Result<Vec<ReadObjectResult<S>>, ReadError>
+pub fn read_contents<O>(contents: Vec<u8>) -> Result<Vec<ReadObjectResult<O>>, ReadError>
 where
-    S: PageSerializable,
+    O: PageReadable,
 {
+    let contents = &contents;
+
     let mut cursor = Cursor::new(contents);
     let mut acc: Vec<(Document, (u64, u64))> = Vec::new();
 
@@ -272,7 +132,7 @@ where
         }
     }
 
-    let mut fin: Vec<ReadObjectResult<S>> = Vec::new();
+    let mut fin: Vec<ReadObjectResult<O>> = Vec::new();
 
     acc.into_iter()
         .map(|read| {
@@ -287,7 +147,7 @@ where
         })
         .for_each(|res| {
             fin.push(ReadObjectResult {
-                object: S::unmarshall(res.0),
+                object: O::read(res.0),
                 pos: res.1,
             })
         });
@@ -301,7 +161,6 @@ mod tests {
 
     use serde_json::{json, Value};
 
-    use crate::lib;
     use crate::lib::json::types::JsonObject;
 
     use super::*;
@@ -312,17 +171,8 @@ mod tests {
         last_name: String,
     }
 
-    impl PageSerializable for IdWrapper {
-        fn marshall(&self) -> Vec<u8> {
-            lib::json::bson::encode(
-                json!({ "firstName": self.first_name, "lastName": self.last_name })
-                    .as_object()
-                    .unwrap()
-                    .clone(),
-            )
-        }
-
-        fn unmarshall(o: JsonObject) -> Self {
+    impl PageReadable for IdWrapper {
+        fn read(o: JsonObject) -> Self {
             IdWrapper {
                 first_name: o.get("firstName").unwrap().as_str().unwrap().to_string(),
                 last_name: o.get("lastName").unwrap().as_str().unwrap().to_string(),
@@ -355,18 +205,6 @@ mod tests {
         let expected = format!("{}/{}", DatabasePath::Data.path(), "test.meta");
 
         assert_eq!(path.to_str().unwrap(), expected);
-    }
-
-    #[test]
-    fn test_read_header() {
-        let header_raw = b"COUNT=12345 POS=1".to_vec();
-
-        let header = read_header(header_raw)
-            .ok()
-            .expect("Could not read key-value pairs from header");
-
-        assert_eq!(header.count, 12345);
-        assert_eq!(header.pos, 1);
     }
 
     #[test]
@@ -404,7 +242,7 @@ mod tests {
         let buf_a = to_writer(object_a);
         let buf_b = to_writer(object_b);
 
-        let res = read_contents::<IdWrapper>(&[&buf_a[..], &buf_b[..]].concat())
+        let res = read_contents::<IdWrapper>([&buf_a[..], &buf_b[..]].concat())
             .ok()
             .unwrap();
 
