@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Mutex;
 
 use rocket::config::{Environment, LoggingLevel};
