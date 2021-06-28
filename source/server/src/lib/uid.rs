@@ -1,15 +1,50 @@
+//! Unique value generation.
 use std::collections::BTreeSet;
+
+/// Unique value generation strategy.
+pub trait UidGenerator {
+    type Value;
+
+    /// Generates a new unique value.
+    fn generate_uid(&mut self) -> Self::Value;
+}
+
+/// Free an inaccessible uid.
+pub trait UidDropper {
+    type Value;
+
+    /// Drops a uid, returning true if it existed in the uid sequence and false if it did not.
+    fn drop_uid(&mut self, uid: Self::Value) -> bool;
+}
 
 /// Incrementing uid that that uses the smallest available integer for the next uid or always
 /// increments to the next uid.
-pub struct IntCursor {
+pub struct IntUid {
+    /// Uid position.
     pos: u64,
+    /// Free uid queue.
     free: BTreeSet<u64>,
 }
 
-impl IntCursor {
-    pub fn new() -> IntCursor {
-        IntCursor {
+impl UidGenerator for IntUid {
+    type Value = u64;
+
+    fn generate_uid(&mut self) -> Self::Value {
+        self.next()
+    }
+}
+
+impl UidDropper for IntUid {
+    type Value = u64;
+
+    fn drop_uid(&mut self, uid: Self::Value) -> bool {
+        self.drop(uid)
+    }
+}
+
+impl IntUid {
+    pub fn new() -> IntUid {
+        IntUid {
             pos: 0,
             free: BTreeSet::new(),
         }
@@ -38,31 +73,33 @@ impl IntCursor {
     }
 }
 
-#[cfg(test)]
 mod tests {
-    use super::*;
+    #[cfg(test)]
+    mod int {
+        use super::super::*;
 
-    #[test]
-    fn it_increments_by_one() {
-        let mut cursor = IntCursor::new();
+        #[test]
+        fn test_generate() {
+            let mut generator = IntUid::new();
 
-        assert_eq!(cursor.next(), 0);
-        assert_eq!(cursor.next(), 1);
-    }
-
-    #[test]
-    fn it_uses_the_smallest_next_available_int() {
-        let mut cursor = IntCursor::new();
-
-        // Populate index to 5.
-        for _ in 0..5 {
-            cursor.next();
+            assert_eq!(generator.next(), 0);
+            assert_eq!(generator.next(), 1);
         }
 
-        cursor.drop(3);
-        cursor.drop(1);
-        cursor.drop(4);
+        #[test]
+        fn test_drop() {
+            let mut generator = IntUid::new();
 
-        assert_eq!(cursor.next(), 1);
+            // Fill generator with 3 unique integers
+            generator.next();
+            generator.next();
+            generator.next();
+
+            // Free the middle integer
+            generator.drop(2);
+
+            // Next free integer should be 2, not 4 because it is the smallest avaiable integer.
+            assert_eq!(generator.next(), 2);
+        }
     }
 }
