@@ -10,9 +10,5 @@ insert_final_newline = true
 tab_width = 2
 indent_size = 2
 
-[*.txt]
-tab_width = 3
-indent_size = 3
-
 [*.go]
 indent_style = tab
