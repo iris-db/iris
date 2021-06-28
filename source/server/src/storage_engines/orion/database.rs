@@ -1,18 +1,19 @@
+use crate::storage_engines::orion::collection::Collection;
 use std::collections::HashMap;
 
 /// An in memory representation of the database.
 pub struct Database {
-    graphs: HashMap<String, Graph>,
+    collections: HashMap<String, Collection>,
 }
 
 impl Database {
     pub fn new() -> Self {
         Database {
-            graphs: HashMap::new(),
+            collections: HashMap::new(),
         }
     }
 
-    pub fn documents(&mut self) -> &mut HashMap<String, Graph> {
-        &mut self.graphs
+    pub fn collections(&mut self) -> &mut HashMap<String, Collection> {
+        &mut self.collections
     }
 }

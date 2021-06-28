@@ -1,7 +1,5 @@
-use std::ops::Deref;
-
 use serde::de::IntoDeserializer;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{Map, Value};
 
 pub type JsonObject = Map<String, Value>;
