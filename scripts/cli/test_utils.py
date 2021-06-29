@@ -1,6 +1,6 @@
 import unittest
 
-from cli_utils import directory_count
+from cli.utils import directory_count
 
 
 class FunctionTests(unittest.TestCase):

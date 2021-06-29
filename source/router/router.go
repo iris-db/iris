@@ -6,5 +6,4 @@ type Router struct {
 }
 
 func main() {
-
 }

@@ -1,7 +1,0 @@
-server:
-  dependentCommands:
-    - cargo
-    - rustup
-  artifacts:
-    - build/server
-

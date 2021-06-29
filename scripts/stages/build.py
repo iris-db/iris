@@ -1,8 +1,8 @@
-from buildstages.command import Command
-from buildstages.stage import BuildStage, stage_dict, FlagSet
+from lib.command import Command
+from lib.stage import Stage, stage_dict, FlagSet
 
 
-class Binary(BuildStage):
+class Binary(Stage):
     name = "server"
     working_directory = "source/server"
 

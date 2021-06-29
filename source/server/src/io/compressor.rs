@@ -28,10 +28,11 @@ mod compressors {
     use std::io;
     use std::io::{Cursor, Read, Write};
 
-    use super::Compressor;
     use flate2::read::ZlibDecoder;
     use flate2::write::ZlibEncoder;
     use flate2::Compression;
+
+    use super::Compressor;
 
     pub(crate) struct Snappy;
 
@@ -72,11 +73,14 @@ mod compressors {
 
     #[cfg(test)]
     mod tests {
-        use super::*;
+        use std::fs;
+
+        use serde_json::json;
+
         use crate::lib::json::bsonio::encoder::encode_json_object;
         use crate::lib::json::types::JsonObject;
-        use serde_json::json;
-        use std::fs;
+
+        use super::*;
 
         #[test]
         fn test_snappy() {

@@ -1,6 +1,6 @@
 import unittest
 
-from buildstages.stage import FlagSet
+from lib.stage import FlagSet
 
 
 class FlagSetTest(unittest.TestCase):

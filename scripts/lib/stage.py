@@ -43,7 +43,7 @@ class FlagSet:
         return self._flags
 
 
-class BuildStage:
+class Stage:
     """Represents a CLI build stage"""
     name: str
     working_directory: str
@@ -53,7 +53,7 @@ class BuildStage:
         pass
 
 
-def stage_dict(stages: list[BuildStage]) -> dict[str, BuildStage]:
+def stage_dict(stages: list[Stage]) -> dict[str, Stage]:
     """Converts a list of build stages into a dict mapping the name of the stage as the key to its instance."""
     new = {}
 
