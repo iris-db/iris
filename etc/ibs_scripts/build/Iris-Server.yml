@@ -1,0 +1,8 @@
+module: source/server
+required-commands:
+  - cargo
+  - rustup
+run: |
+  cargo +nightly build --release
+artifacts:
+  - target/release/iris

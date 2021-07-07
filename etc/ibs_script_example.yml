@@ -1,0 +1,13 @@
+module
+requiredCommands:
+  - ls
+  - cd
+  - cat
+run: |
+  echo "Hello world!"
+
+  $number = 42
+  echo $number
+artifacts:
+  - some/relative/directory/Artifact.exe
+  - OtherArtifact
