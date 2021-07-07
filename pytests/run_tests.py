@@ -3,6 +3,7 @@ import pathlib
 from os import listdir
 from os.path import isfile, join
 
+
 TESTS_MODULE = "tests"
 
 REQUIRED_ATTRIBUTES = {
@@ -19,9 +20,11 @@ def main():
     """
     Runs all tests in the python files at the TESTS_MODULE.
     """
-    full_test_path = join(pathlib.Path(__file__).parent.absolute(), TESTS_MODULE)
+    full_test_path = join(pathlib.Path(
+        __file__).parent.absolute(), TESTS_MODULE)
 
-    files = [f for f in listdir(full_test_path) if isfile(join(full_test_path, f))]
+    files = [f for f in listdir(full_test_path)
+             if isfile(join(full_test_path, f))]
 
     for f in files:
         mod = importlib.import_module(f"{TESTS_MODULE}.{str(f[:-3])}")
