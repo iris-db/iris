@@ -4,9 +4,8 @@
 # Artifacts
 **/dist
 
-# t and b
-testscripts/__TEST_SCRIPT__
-buildscripts/__BUILD_SCRIPT__
+# IBS
+ibs/ibs
 
 # IDE
 **/*.iml
