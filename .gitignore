@@ -2,7 +2,6 @@
 **/target
 
 # Artifacts
-**/build
 **/dist
 
 # t and b
