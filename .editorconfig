@@ -9,8 +9,3 @@ insert_final_newline = true
 [*.{js,jsx,ts,tsx,json,yml,xml}]
 tab_width = 2
 indent_size = 2
-
-[*.go]
-indent_style = tab
-indent_size = 8
-tab_width = 8
