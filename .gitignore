@@ -15,3 +15,5 @@ ibs/ibs
 **/venv
 **/__pycache__
 **/*.DS_Store
+
+iris.code-workspace
