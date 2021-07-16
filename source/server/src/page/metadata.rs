@@ -52,15 +52,42 @@ impl TryFrom<Vec<u8>> for PageMetadata {
     }
 }
 
-impl From<PageMetadata> for Vec<u8> {
-    fn from(header: PageMetadata) -> Self {
-        format!("COUNT={}\nPOS={}", header.count, header.pos).into_bytes()
-    }
-}
-
 impl PageMetadata {
     /// Initializes a new PageMetadata object, not saving it to the disk.
     pub fn new() -> Self {
         PageMetadata { count: 0, pos: 0 }
+    }
+
+    /// The file name where the metadata should be written to.
+    pub fn file_name(&self, collection_name: String) -> String {
+        format!("{}.{}", collection_name, self.pos)
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        format!("COUNT={}\nPOS={}", self.count, self.pos).into_bytes()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_file_name() {
+        let mut metadata = PageMetadata::new();
+        metadata.pos = 64;
+
+        assert_eq!(metadata.file_name("users".into()), "users.64");
+    }
+
+    #[test]
+    fn test_as_bytes() {
+        let mut metadata = PageMetadata::new();
+        metadata.count = 32;
+        metadata.pos = 64;
+
+        let expected = b"COUNT=32\nPOS=64";
+
+        assert_eq!(expected, metadata.as_bytes());
     }
 }
