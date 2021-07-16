@@ -88,7 +88,7 @@ pub mod encoder {
 }
 
 /// BSON decoding operations.
-mod decoder {
+pub mod decoder {
     use std::io::Cursor;
 
     use bson::{Bson, Document};
