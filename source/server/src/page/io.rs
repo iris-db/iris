@@ -10,15 +10,16 @@ use crate::page::error::{ReadError, WriteError};
 use crate::page::metadata::PageMetadata;
 use crate::page::page::{PageReadable, PageWriteable, MAX_PAGE_SIZE, META_PAGE_EXT};
 
-/// Creates a metadata file containing the page header.
+/// Creates a metadata file containing the page metadata and an empty file representing the page.
 pub fn new(name: &str) -> Result<(), WriteError> {
     let p = &get_meta_path(name);
     fs::create_dir_all(p.parent().unwrap())?;
 
-    let mut file = File::create(p)?;
+    let mut _page_file = File::create(get_next_page_path(name))?;
+    let mut meta_file = File::create(p)?;
 
     let bytes: Vec<u8> = PageMetadata::new().into();
-    write(&mut file, bytes)
+    write(&mut meta_file, bytes)
 }
 
 /// Opens a the next page file with available space.
@@ -211,15 +212,15 @@ mod tests {
     fn test_read_contents() {
         let object_a = json!(
             {
-            "firstName": "John",
-            "lastName": "Smith"
+                "firstName": "John",
+                "lastName": "Smith"
             }
         );
 
         let object_b = json!(
             {
-            "firstName": "Bobby",
-            "lastName": "Brown"
+                "firstName": "Bobby",
+                "lastName": "Brown"
             }
         );
 
