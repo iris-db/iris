@@ -1,3 +1,3 @@
-mod collection;
+pub mod collection;
 pub mod database;
-mod document;
+pub mod document;
