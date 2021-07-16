@@ -1,14 +1,22 @@
+use crate::lib::json::types::JsonObject;
+
 /// A JSON document, stored internally using BSON encoding.
 pub struct Document {
-    data: Vec<u8>,
+    inner: JsonObject,
 }
 
 impl Document {
-    pub fn new(data: Vec<u8>) -> Document {
-        Document { data }
+    pub fn new(o: JsonObject) -> Document {
+        Document { inner: o }
     }
 
-    pub fn data(&self) -> &Vec<u8> {
-        &self.data
+    pub fn as_json(&self) -> &JsonObject {
+        &self.inner
+    }
+}
+
+impl From<JsonObject> for Document {
+    fn from(o: JsonObject) -> Self {
+        Document::new(o)
     }
 }
