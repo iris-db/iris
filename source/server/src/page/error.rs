@@ -24,6 +24,8 @@ impl From<bson::de::Error> for ReadError {
 #[derive(Debug)]
 /// Error that occurs when attempting to write data to a page.
 pub enum WriteError {
+    /// Could not create a new page.
+    CouldNotCreatePage(io::Error),
     /// Io error.
     Io(io::Error),
     /// The data attempting to be written will overflow the page size.
