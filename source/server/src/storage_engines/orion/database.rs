@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 /// An in memory representation of the database.
 pub struct Database {
-    collections: HashMap<String, Collection>,
+    collections: HashMap<String, u32>,
 }
 
 impl Database {
@@ -13,7 +13,7 @@ impl Database {
         }
     }
 
-    pub fn collections(&mut self) -> &mut HashMap<String, Collection> {
+    pub fn collections(&mut self) -> &mut HashMap<String, u32> {
         &mut self.collections
     }
 }

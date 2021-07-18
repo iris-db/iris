@@ -1,7 +1,6 @@
 use crate::page::page::Page;
-use crate::storage_engines::orion::document::Document;
-use std::borrow::Borrow;
 
+#[derive(Debug, Clone)]
 pub struct CollectionName(String);
 
 impl From<String> for CollectionName {
@@ -12,12 +11,12 @@ impl From<String> for CollectionName {
 
 impl CollectionName {
     /// Get the raw collection name.
-    pub fn name(&self) -> &String {
+    pub fn as_string(&self) -> &String {
         &self.0
     }
 
     /// Convert to the raw collection name.
-    pub fn into_name(self) -> String {
+    pub fn into_string(self) -> String {
         self.0
     }
 
@@ -30,15 +29,12 @@ impl CollectionName {
 /// An abstraction over data pages.
 pub struct Collection<'a> {
     name: CollectionName,
-    page: Option<&'a Page<'a>>,
+    pages: Option<Vec<&'a Page>>,
 }
 
 impl Collection<'_> {
     pub fn new(name: CollectionName) -> Self {
-        let mut col = Collection { name, page: None };
-        col.page = Some(&Page::new(&col).into_ok());
-
-        col
+        todo!()
     }
 
     pub fn name(&self) -> &CollectionName {

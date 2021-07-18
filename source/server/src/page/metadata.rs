@@ -88,6 +88,6 @@ mod tests {
 
         let expected = b"COUNT=32\nPOS=64";
 
-        assert_eq!(expected, metadata.as_bytes());
+        assert_eq!(expected, &*metadata.as_bytes());
     }
 }

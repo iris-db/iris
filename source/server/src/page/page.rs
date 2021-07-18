@@ -1,12 +1,11 @@
+use std::fs;
+
 use crate::io::filesystem::DatabasePath;
-use crate::lib::json::bsonio;
 use crate::lib::json::types::JsonObject;
 use crate::page::error::{ReadError, WriteError};
-use crate::page::io::get_meta_path;
 use crate::page::metadata::PageMetadata;
-use crate::storage_engines::orion::collection::Collection;
+use crate::storage_engines::orion::collection::CollectionName;
 use crate::storage_engines::orion::document::Document;
-use std::fs;
 
 /// The maximum amount of data that is able to fit on a single page.
 ///
@@ -24,40 +23,32 @@ pub trait PageWriteable {
 }
 
 /// A set of data limited to the max page size.
-pub struct Page<'a> {
+pub struct Page {
     /// Filesystem path relative to the database data path.
-    collection_name: String,
+    collection_name: CollectionName,
     /// The page id for the collection.
     metadata: PageMetadata,
     /// Page data loaded in memory.
     documents: Option<Box<Vec<Document>>>,
 }
 
-impl Page<'_> {
+impl Page {
     /// Creates a new page on the filesystem if it does not exist.
-    pub fn create(collection_name: String) -> Self {
+    pub fn create(collection_name: CollectionName) -> Self {
         let mut page = Page {
             collection_name,
             metadata: PageMetadata::new(),
             documents: None,
         };
 
-        page.fwrite_all();
+        page.fwrite_all().unwrap();
 
         page
     }
 
     /// Loads the page contents into memory.
     pub fn load_contents_into_memory(&mut self) -> Result<(), ReadError> {
-        let mut file = &self.file;
-
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf).unwrap();
-
-        let documents = bsonio::decoder::decode_json_objects(buf)?;
-        self.documents = Some(documents.into_iter().map(Into::into).collect());
-
-        Ok(())
+        todo!()
     }
 
     /// Frees the page contents from memory.
@@ -81,27 +72,40 @@ impl Page<'_> {
     }
 
     /// Updates the filesystem to match the in memory page.
-    pub fn fwrite_all(&mut self) {
-        self.fwrite_contents();
-        self.fwrite_meta();
+    pub fn fwrite_all(&mut self) -> Result<(), WriteError> {
+        self.fwrite_meta()?;
+        self.fwrite_contents()?;
+
+        Ok(())
     }
 
     /// Writes the memory contents onto the filesystem if loaded.
-    pub fn fwrite_contents(&mut self) {
+    pub fn fwrite_contents(&mut self) -> Result<(), WriteError> {
         if self.documents.is_none() {
             DatabasePath::Data.write(
-                self.collection.name().into_file_name(self.id).into(),
+                self.collection_name
+                    .clone()
+                    .into_file_name(self.metadata.pos as u32)
+                    .as_str(),
                 // TODO Marshall page docs into vec
                 vec![],
-            );
+            )?
         }
+
+        Ok(())
     }
 
     /// Write the page metadata to the filesystem.
-    pub fn fwrite_meta(&self) {
-        let file_name = self.metadata.file_name(self.collection_name.clone());
+    pub fn fwrite_meta(&self) -> Result<(), WriteError> {
+        let file_name = self
+            .metadata
+            .file_name(self.collection_name.clone().into_string());
         let bytes = self.metadata.as_bytes();
 
-        fs::write(DatabasePath::Data.file(&file_name), bytes);
+        let err = fs::write(DatabasePath::Data.file(&file_name), bytes).err();
+        return match err {
+            None => Ok(()),
+            Some(e) => Err(e.into()),
+        };
     }
 }

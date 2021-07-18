@@ -18,7 +18,7 @@ pub fn new(name: &str) -> Result<(), WriteError> {
     let mut _page_file = File::create(get_next_page_path(name))?;
     let mut meta_file = File::create(p)?;
 
-    let bytes: Vec<u8> = PageMetadata::new().into();
+    let bytes: Vec<u8> = PageMetadata::new().as_bytes();
     write(&mut meta_file, bytes)
 }
 
