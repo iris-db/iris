@@ -5,17 +5,29 @@ use std::{fs, io};
 
 use bson::{Bson, Document};
 
-use crate::io::filesystem::DatabasePath;
+use crate::io::file_descriptor::FileDescriptor;
+use crate::io::filesystem::Filesystem;
+use crate::io::path::DatabasePath;
 use crate::page::error::{ReadError, WriteError};
 use crate::page::metadata::PageMetadata;
 use crate::page::page::{PageReadable, PageWriteable, MAX_PAGE_SIZE, META_PAGE_EXT};
 
 /// Creates a metadata file containing the page metadata and an empty file representing the page.
-pub fn new(name: &str) -> Result<(), WriteError> {
+pub fn new<F>(fs: &F, name: &str) -> Result<(), WriteError>
+where
+    F: Filesystem,
+{
     let p = &get_meta_path(name);
     fs::create_dir_all(p.parent().unwrap())?;
 
-    let mut _page_file = File::create(get_next_page_path(name))?;
+    let next_page_path = get_next_page_path(name);
+
+    let page_file_desc = FileDescriptor {
+        path: DatabasePath::Data,
+        name: name.to_string(),
+    };
+
+    let mut _page_file = fs.create_file(&page_file_desc)?;
     let mut meta_file = File::create(p)?;
 
     let bytes: Vec<u8> = PageMetadata::new().as_bytes();
@@ -78,12 +90,12 @@ pub fn get_meta_path(name: &str) -> PathBuf {
 
 /// Gets the path of the page with available disk space.
 pub fn get_next_page_path(name: &str) -> PathBuf {
-    get_page_with_ext(name, "0")
+    todo!()
 }
 
 /// Concatenates a file extension to a page name, returning the full relative path.
 fn get_page_with_ext(name: &str, ext: &str) -> PathBuf {
-    Path::new(&DatabasePath::Data.path()).join(&[name, ".", ext].concat())
+    Path::new(&DatabasePath::Data.path_name()).join(&[name, ".", ext].concat())
 }
 
 impl PageWriteable for Vec<u8> {
@@ -162,7 +174,7 @@ mod tests {
 
     use serde_json::{json, Value};
 
-    use crate::lib::json::types::JsonObject;
+    use crate::{io::filesystem::InactiveFs, lib::json::types::JsonObject};
 
     use super::*;
 
@@ -183,7 +195,7 @@ mod tests {
 
     #[test]
     fn test_new() {
-        new("test").expect("Error while creating test page");
+        new(&InactiveFs, "test").expect("Error while creating test page");
 
         assert!(Path::exists(&get_meta_path("test")))
     }
@@ -203,7 +215,7 @@ mod tests {
     #[test]
     fn test_get_meta_path() {
         let path = get_meta_path("test");
-        let expected = format!("{}/{}", DatabasePath::Data.path(), "test.meta");
+        let expected = format!("{}/{}", DatabasePath::Data.path_name(), "test.meta");
 
         assert_eq!(path.to_str().unwrap(), expected);
     }

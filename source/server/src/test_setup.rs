@@ -1,13 +1,13 @@
 ///! Deletes database runtime directory after executing tests.
 use std::fs;
 
-use crate::io::filesystem;
-use crate::io::filesystem::ROOT_PATH;
+use crate::io::path;
+use crate::io::path::ROOT_PATH;
 
 #[cfg(test)]
 #[ctor::ctor]
 fn prepare_filesystem() {
-    filesystem::prepare();
+    path::prepare();
 }
 
 #[cfg(test)]

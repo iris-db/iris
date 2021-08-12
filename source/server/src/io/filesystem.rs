@@ -1,78 +1,96 @@
+use crate::io::file_descriptor::FileDescriptor;
+use crate::io::path::DatabasePath;
 use std::fs::OpenOptions;
-use std::io::Write;
-use std::slice::Iter;
+use std::io::{Error, Write};
+use std::path::Path;
 use std::{fs, io};
 
-pub const ROOT_PATH: &str = "iris";
+/// An abstraction over the OS filesystem that allows for different implementations of common
+/// operations.
+pub trait Filesystem {
+    /// Creates a directory if it does not exist.
+    fn create_dir<T>(&self, name: T) -> io::Result<()>
+    where
+        T: AsRef<str>;
 
-/// Initializes all of the directories for the src process.
-pub fn prepare() {
-    for path in DatabasePath::paths() {
-        match fs::create_dir_all(path.path()) {
-            Err(e) => panic!("{}", e),
-            _ => {}
-        }
-    }
+    /// Creates a new file if it does not exist.
+    fn create_file(&self, f: &FileDescriptor) -> io::Result<()>;
+
+    /// Check if a file exists.
+    fn file_exists(&self, f: &FileDescriptor) -> bool;
+
+    /// Overwrites a file with the new contents.
+    fn overwrite(&self, f: &FileDescriptor, bytes: Vec<u8>) -> io::Result<()>;
+
+    /// Appends bytes to the end of a file.
+    fn append(&self, f: &FileDescriptor, bytes: Vec<u8>) -> io::Result<()>;
 }
 
-/// src storage paths.
-pub enum DatabasePath {
-    /// Graph data.
-    Data,
-    /// Temporary files that will be eventually removed from the disk.
-    Temp,
-    /// Log files.
-    Logs,
-}
+/// The native filesystem used in the production build.
+pub struct StdFs;
 
-impl DatabasePath {
-    /// Returns an iterator of each path.
-    pub fn paths() -> Iter<'static, DatabasePath> {
-        use DatabasePath::*;
-
-        static PATHS: [DatabasePath; 3] = [Data, Temp, Logs];
-
-        PATHS.iter()
-    }
-
-    /// Writes a set of bytes to a file and overwrites its previous contents.
-    pub fn write(&self, file: &str, contents: Vec<u8>) -> Result<(), io::Error> {
-        fs::write(self.file(file), contents)
-    }
-
-    /// Writes a set of bytes to a file and appends it to the file.
-    pub fn append(&self, file: &str, contents: Vec<u8>) -> Result<(), io::Error> {
-        let mut f = OpenOptions::new()
-            .append(true)
-            .write(true)
-            .create(true)
-            .open(self.file(file))?;
-
-        f.write(&*contents)?;
-
+impl Filesystem for StdFs {
+    fn create_dir<T>(&self, name: T) -> Result<(), io::Error>
+    where
+        T: AsRef<str>,
+    {
+        fs::create_dir_all(name.as_ref())?;
         Ok(())
     }
 
-    /// Returns the relative path of a file in the directory.
-    ///
-    /// For example (Log path):
-    ///
-    /// * `Input` - object.meta
-    /// * `Output` - src/logs/object.meta
-    pub fn file(&self, file: &str) -> String {
-        format!("{}/{}", self.path(), file)
+    fn create_file(&self, f: &FileDescriptor) -> io::Result<()> {
+        fs::write(f.relative_path(), Vec::new())?;
+        Ok(())
     }
 
-    /// Gets the path.
-    pub fn path(&self) -> String {
-        fn cat_root(path: &str) -> String {
-            format!("{}/{}", ROOT_PATH, path)
-        }
+    fn file_exists(&self, f: &FileDescriptor) -> bool {
+        Path::new(&f.relative_path()).exists()
+    }
 
-        return match self {
-            DatabasePath::Data => cat_root("data"),
-            DatabasePath::Temp => cat_root("temp"),
-            DatabasePath::Logs => cat_root("logs"),
-        };
+    fn overwrite(&self, f: &FileDescriptor, bytes: Vec<u8>) -> io::Result<()> {
+        fs::write(&f.relative_path(), bytes)?;
+        Ok(())
+    }
+
+    fn append(&self, f: &FileDescriptor, bytes: Vec<u8>) -> io::Result<()> {
+        let mut file = OpenOptions::new()
+            .append(true)
+            .write(true)
+            .create(true)
+            .open(&f.relative_path())?;
+
+        file.write(&*bytes)?;
+
+        Ok(())
+    }
+}
+
+/// <strong>SHOULD ALWAYS BE USED WHEN TESTING</strong>
+///
+/// A filesystem that does not modify the OS filesystem in any way.
+pub struct InactiveFs;
+
+impl Filesystem for InactiveFs {
+    fn create_dir<T>(&self, _name: T) -> io::Result<()>
+    where
+        T: AsRef<str>,
+    {
+        Ok(())
+    }
+
+    fn create_file(&self, _f: &FileDescriptor) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn file_exists(&self, _f: &FileDescriptor) -> bool {
+        true
+    }
+
+    fn overwrite(&self, _f: &FileDescriptor, _bytes: Vec<u8>) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn append(&self, _f: &FileDescriptor, _bytes: Vec<u8>) -> io::Result<()> {
+        Ok(())
     }
 }
