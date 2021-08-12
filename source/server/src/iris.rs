@@ -7,19 +7,19 @@
 extern crate rocket;
 
 use crate::conn::server::Server;
-use crate::io::filesystem;
-use crate::io::filesystem::DatabasePath;
 use crate::io::logger::s_log;
 use crate::io::logger::EventSeverity::Info;
+use crate::io::path;
+use crate::io::path::DatabasePath;
 use std::env;
 
+mod api;
 mod conn;
 #[allow(warnings, unused)]
 mod io;
-mod iql;
 mod lib;
 mod page;
-mod storage_engines;
+mod storage;
 #[allow(unused_imports)]
 mod test_setup;
 
@@ -31,7 +31,7 @@ use serde_json::json;
 fn main() {
     s_log(Info, General, "Starting IrisDB v0.0.1");
 
-    filesystem::prepare();
+    path::prepare();
 
     for dir in DatabasePath::paths() {
         s_log(
@@ -40,7 +40,7 @@ fn main() {
             &*format!(
                 "[Directory-InUse] {}/{}",
                 env::current_dir().unwrap().to_str().unwrap(),
-                dir.path()
+                dir.path_name()
             ),
         );
     }
