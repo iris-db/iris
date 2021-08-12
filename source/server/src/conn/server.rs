@@ -14,7 +14,7 @@ use crate::io::logger::s_log;
 use crate::io::logger::EventCategory::Network;
 use crate::io::logger::EventSeverity::Info;
 use crate::lib::json::types::{JsonObject, SmartJson};
-use crate::storage_engines::orion::database::Database;
+use crate::storage::database::Database;
 
 /// An IrisDB server.
 pub struct Server {

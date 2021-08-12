@@ -1,4 +1,4 @@
-use crate::storage_engines::orion::collection::Collection;
+use crate::storage::collection::Collection;
 use std::collections::HashMap;
 
 /// An in memory representation of the database.

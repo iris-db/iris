@@ -1,11 +1,11 @@
 use std::fs;
 
-use crate::io::filesystem::DatabasePath;
+use crate::io::path::DatabasePath;
 use crate::lib::json::types::JsonObject;
 use crate::page::error::{ReadError, WriteError};
 use crate::page::metadata::PageMetadata;
-use crate::storage_engines::orion::collection::CollectionName;
-use crate::storage_engines::orion::document::Document;
+use crate::storage::document::Document;
+use crate::storage::utils::CollectionNameFormatter;
 
 /// The maximum amount of data that is able to fit on a single page.
 ///
@@ -22,37 +22,30 @@ pub trait PageWriteable {
     fn write(self) -> Vec<u8>;
 }
 
-/// A set of data limited to the max page size.
+/// A single chunk of data from a database collection. Can be loaded in and out from memory when
+/// necessary.
 pub struct Page {
-    /// Filesystem path relative to the database data path.
-    collection_name: CollectionName,
+    collection_name: CollectionNameFormatter,
     /// The page id for the collection.
     metadata: PageMetadata,
-    /// Page data loaded in memory.
+    /// Document data possibly loaded in memory. If the documents is None, then the page is not
+    /// loaded into memory.
     documents: Option<Box<Vec<Document>>>,
 }
 
 impl Page {
     /// Creates a new page on the filesystem if it does not exist.
-    pub fn create(collection_name: CollectionName) -> Self {
-        let mut page = Page {
-            collection_name,
-            metadata: PageMetadata::new(),
-            documents: None,
-        };
-
-        page.fwrite_all().unwrap();
-
-        page
+    pub fn create(collection_name: String) -> Self {
+        todo!()
     }
 
     /// Loads the page contents into memory.
-    pub fn load_contents_into_memory(&mut self) -> Result<(), ReadError> {
+    pub fn read(&mut self) -> Result<(), ReadError> {
         todo!()
     }
 
     /// Frees the page contents from memory.
-    pub fn release_contents_from_memory(&mut self) {
+    pub fn free(&mut self) {
         let contents = &mut self.documents;
         if contents.is_some() {
             let contents = contents.as_mut().unwrap();
@@ -60,46 +53,22 @@ impl Page {
         }
     }
 
-    /// Get the page contents from memory if loaded in memory, otherwise getting them directly
-    /// by opening the file.
-    pub fn documents(&self) -> &Option<Box<Vec<Document>>> {
+    /// Get the page contents from memory if loaded in memory.
+    pub fn data(&self) -> &Option<Box<Vec<Document>>> {
         &self.documents
     }
 
-    /// Updates the page contents in memory.
-    pub fn update_documents(&mut self, new: Vec<Document>) {
-        self.documents = Some(new.into());
-    }
-
-    /// Updates the filesystem to match the in memory page.
-    pub fn fwrite_all(&mut self) -> Result<(), WriteError> {
-        self.fwrite_meta()?;
-        self.fwrite_contents()?;
-
-        Ok(())
-    }
-
-    /// Writes the memory contents onto the filesystem if loaded.
-    pub fn fwrite_contents(&mut self) -> Result<(), WriteError> {
-        if self.documents.is_none() {
-            DatabasePath::Data.write(
-                self.collection_name
-                    .clone()
-                    .into_file_name(self.metadata.pos as u32)
-                    .as_str(),
-                // TODO Marshall page docs into vec
-                vec![],
-            )?
-        }
-
-        Ok(())
+    /// Updates the page contents. If the page is loaded into memory, the contents are updated in
+    /// memory as well as on the filesystem, otherwise only updating on the filesystem.
+    pub fn write(&mut self, new: Vec<Document>) {
+        todo!()
     }
 
     /// Write the page metadata to the filesystem.
     pub fn fwrite_meta(&self) -> Result<(), WriteError> {
         let file_name = self
             .metadata
-            .file_name(self.collection_name.clone().into_string());
+            .file_name(self.collection_name.clone().into_original());
         let bytes = self.metadata.as_bytes();
 
         let err = fs::write(DatabasePath::Data.file(&file_name), bytes).err();
