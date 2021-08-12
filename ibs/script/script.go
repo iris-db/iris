@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	configsDirectory     = "etc/ibs_scripts"
-	artifactOutDirectory = "dist"
+	ConfigsDirectory     = "etc/ibs_scripts"
+	ArtifactOutDirectory = "dist"
 )
 
 // Script is a runnable script that dispatches build or test operations.
@@ -45,7 +45,7 @@ var (
 	RunStage ExecutionStage = "Run"
 )
 
-// New loads a Script from the filesystem based on the configsDirectory
+// New loads a Script from the filesystem based on the ConfigsDirectory
 func New(opts *cli.Options) (Script, error) {
 	modeTyped, err := ModeFromString(opts.Type)
 	if err != nil {
@@ -54,7 +54,7 @@ func New(opts *cli.Options) (Script, error) {
 
 	scriptName := opts.Name
 
-	dir := fmt.Sprintf("%s/%s/%s.yml", configsDirectory, modeTyped.ToString(), scriptName)
+	dir := fmt.Sprintf("%s/%s/%s.yml", ConfigsDirectory, modeTyped.ToString(), scriptName)
 
 	file, err := ioutil.ReadFile(path.Join("..", dir))
 	if err != nil {
@@ -122,7 +122,7 @@ func (s Script) Start() error {
 	for _, a := range cfg.Artifacts {
 		binPath := path.Join(modDir, a)
 
-		outDir := path.Join(artifactOutDirectory, s.Name)
+		outDir := path.Join(ArtifactOutDirectory, s.Name)
 		if err := os.MkdirAll(outDir, os.ModePerm); err != nil {
 			return RunError(fmt.Errorf("could not create artifacts directory at %s", outDir))
 		}

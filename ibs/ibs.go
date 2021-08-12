@@ -27,7 +27,7 @@ func main() {
 		script.RunError(err).PrettyFatalLog()
 	}
 
-	fmt.Printf("\nSuccessfuly executed the %s script.\nAny generated binaries will be in the build/%s directory.\n", s.Name, s.Name)
+	fmt.Printf("\nSuccessfuly executed the %s script.\nAny generated binaries will be in the %s/%s directory.\n", s.Name, script.ArtifactOutDirectory, s.Name)
 }
 
 // requireStringFlagExistance requires that a string flag exists, exiting the
