@@ -1,7 +1,7 @@
 Iris README
 
-The distributed graph database for modern data.
+The distributed document database for modern data.
 
 COMPONENTS
 
-    iris - Database process.
+    iris-server - The database server that can run standalone or in an Iris cluster.
