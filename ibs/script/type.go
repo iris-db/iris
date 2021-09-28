@@ -11,7 +11,7 @@ type Type int
 const (
 	// Build is a script that builds a binary or compiles a file.
 	Build Type = iota
-	// Test runs unit, integration, or end to end tests for a project.
+	// Test runs unit, integration, or end-to-end tests for a project.
 	Test
 )
 
@@ -25,7 +25,7 @@ func (t Type) ToString() string {
 
 // ModeFromString returns a Type from a string.
 //
-// Modes must be either TEST or BUILD (case insensitive). Returns an error if the mode is invalid.
+// Modes must be either TEST or BUILD (case-insensitive). Returns an error if the mode is invalid.
 func ModeFromString(s string) (Type, error) {
 	switch strings.ToLower(s) {
 	case "build":

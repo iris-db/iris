@@ -51,8 +51,8 @@ func (s spawner) GetAvaiableSpawnCommand() (string, error) {
 
 var (
 	windowsSpawner = spawner{
-		"cmd":  nil,
-		"pwsh": nil,
+		"cmd":  {"powershell -command"},
+		"pwsh": {"powershell -command"},
 	}
 	macSpawner = spawner{
 		"bash": {"-c"},

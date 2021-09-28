@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/iris-db/iris/scripts/cli"
 	"github.com/iris-db/iris/scripts/script"
-	"os"
 )
 
 func main() {

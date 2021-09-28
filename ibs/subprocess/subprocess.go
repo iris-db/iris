@@ -14,7 +14,7 @@ type Subprocess struct {
 
 // New creates a new Subprocess.
 func New() *Subprocess {
-	return new(Subprocess)
+	return &Subprocess{}
 }
 
 // Start starts the subprocess.
