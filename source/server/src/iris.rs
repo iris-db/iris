@@ -6,7 +6,7 @@
 #[macro_use]
 extern crate rocket;
 
-use crate::conn::server::Server;
+use crate::http::{config::HttpServerConfig, server::HttpServer};
 use crate::io::logger::s_log;
 use crate::io::logger::EventSeverity::Info;
 use crate::io::path;
@@ -14,7 +14,7 @@ use crate::io::path::DatabasePath;
 use std::env;
 
 mod api;
-mod conn;
+mod http;
 #[allow(warnings, unused)]
 mod io;
 mod lib;
@@ -56,6 +56,6 @@ fn main() {
         ),
     );
 
-    let s = Server::new(12712, 0);
+    let s = HttpServer::new(HttpServerConfig { port: 12712 });
     s.start();
 }

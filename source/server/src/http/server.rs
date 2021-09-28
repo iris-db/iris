@@ -7,35 +7,33 @@ use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::conn::response_builder;
-use crate::conn::response_builder::ResponseFormat;
-use crate::conn::response_builder::ResponseFormat::JSON;
 use crate::io::logger::s_log;
 use crate::io::logger::EventCategory::Network;
 use crate::io::logger::EventSeverity::Info;
 use crate::lib::json::types::{JsonObject, SmartJson};
+use crate::lib::response_builder;
+use crate::lib::response_builder::ResponseFormat;
+use crate::lib::response_builder::ResponseFormat::JSON;
 use crate::storage::database::Database;
 
-/// An IrisDB server.
-pub struct Server {
-    /// Max cache size for internal cache engine.
-    max_cache_size: usize,
-    /// Exposed port for the HTTP server.
-    port: u16,
+use super::config::HttpServerConfig;
+
+/// An IrisDB HTTP server.
+pub struct HttpServer {
+    cfg: HttpServerConfig,
 }
 
-impl Server {
-    pub fn new(port: u16, max_cache_size: usize) -> Self {
-        Self {
-            port,
-            max_cache_size,
-        }
+impl HttpServer {
+    pub fn new(cfg: HttpServerConfig) -> HttpServer {
+        HttpServer { cfg }
     }
 
     /// Starts the HTTP server.
     pub fn start(&self) {
+        let HttpServerConfig { port } = self.cfg;
+
         let config = Config::build(Environment::Staging)
-            .port(self.port)
+            .port(port)
             .log_level(LoggingLevel::Off)
             .finalize()
             .unwrap();
@@ -43,7 +41,7 @@ impl Server {
         s_log(
             Info,
             Network,
-            &*format!("HTTP protocol started on http://localhost:{}", self.port),
+            &*format!("HTTP protocol started on http://localhost:{}", port),
         );
 
         rocket::custom(config)
@@ -61,7 +59,7 @@ struct RequestBody {
     return_stmt: Option<String>,
 }
 
-#[post("/graph/_query", data = "<body>")]
+#[post("/collection/_query", data = "<body>")]
 fn graph_query<'a>(
     body: Json<JsonObject>,
     ctx: State<Mutex<Database>>,

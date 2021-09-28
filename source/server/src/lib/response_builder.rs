@@ -30,7 +30,8 @@ impl<'a> ApiResponse<'a> {
     }
 }
 
-/// REST API response type.
+/// Rest API response type header. This is used to determine the response
+/// format. The header is `x-response-format`.
 pub enum ResponseFormat {
     /// A plaintext table for CLI usage.
     Table,
