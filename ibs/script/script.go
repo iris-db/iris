@@ -3,14 +3,15 @@ package script
 import (
 	"errors"
 	"fmt"
-	"github.com/iris-db/iris/scripts/cli"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
 
-	"github.com/iris-db/iris/scripts/subprocess"
+	"github.com/estebangarcia21/subprocess"
+	"github.com/iris-db/iris/scripts/cli"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -109,8 +110,8 @@ func (s Script) Start() error {
 
 	// Run the build steps.
 	if cfg.Run != "" {
-		sp := subprocess.New()
-		if err := sp.Start(s.Config.Run); err != nil {
+		sp := subprocess.New(s.Config.Run, subprocess.Shell)
+		if err := sp.Exec(); err != nil {
 			return err
 		}
 	}
